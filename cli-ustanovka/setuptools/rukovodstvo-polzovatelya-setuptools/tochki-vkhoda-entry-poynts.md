@@ -177,4 +177,229 @@ timmins
         └── __init__.py
 ```
 
+а в `src/timmins/__init__.py` у нас есть следующий код:
+
+```python
+def hello_world():
+    print('Hello world')
+```
+
+По сути, мы определили функцию `hello_world()`, которая будет печатать текст «Hello world». Теперь предположим, что мы хотим напечатать текст «Hello world» разными способами. Текущая функция просто печатает текст как есть — скажем, нам нужен другой стиль, в котором текст заключен в восклицательные знаки:
+
+```bash
+!!! Hello world !!!
+```
+
+Давайте посмотрим, как это можно сделать с помощью плагинов. Во-первых, давайте отделим стиль печати текста от самого текста. Другими словами, мы можем изменить код в `src/timmins/__init__.py` примерно так:
+
+```python
+def display(text):
+    print(text)
+
+def hello_world():
+    display('Hello world')
+```
+
+Здесь функция `display()` управляет стилем печати текста, а функция `hello_world()` вызывает функцию `display()` для печати текста «Hello world».
+
+Прямо сейчас функция `display()` просто печатает текст как есть. Чтобы иметь возможность настроить его, мы можем сделать следующее. Давайте введем новую группу (_group_) точек входа с именем `timmins.display` и ожидаем, что пакеты плагинов, реализующие эту точку входа, будут предоставлять функцию, подобную `display()`. Затем, чтобы иметь возможность автоматически обнаруживать пакеты плагинов, которые реализуют эту точку входа, мы можем использовать модуль `importlib.metadata` следующим образом:
+
+```python
+from importlib.metadata import entry_points
+display_eps = entry_points(group='timmins.display')
+```
+
+{% hint style="info" %}
+Каждый объект `importlib.metadata.EntryPoint` — это объект, содержащий **name**, **group** и **value**. Например, после настройки пакета плагина, как описано ниже, **display\_eps** в приведенном выше коде будет выглядеть так: \[2]
+
+```python
+(
+    EntryPoint(
+        name='excl',
+        value='timmins_plugin_fancy:excl_display',
+        group='timmins.display'
+    ),
+    ...,
+)
+```
+{% endhint %}
+
+**display\_eps** теперь будет списком объектов **EntryPoint**, каждый из которых ссылается на функции, подобные `display()`, определенные одним или несколькими установленными пакетами плагинов. Затем, чтобы импортировать конкретную функцию, подобную `display()` — давайте выберем ту, которая соответствует первой обнаруженной точке входа — мы можем использовать метод `load()` следующим образом:
+
+```python
+display = display_eps[0].load()
+```
+
+Наконец, разумным поведением было бы то, что если мы не можем найти какие-либо пакеты плагинов, настраивающие функцию `display()`, мы должны вернуться к нашей реализации по умолчанию, которая печатает текст как есть. С учетом этого поведения код в `src/timmins/__init__.py`, наконец, становится таким:
+
+```python
+from importlib.metadata import entry_points
+
+display_eps = entry_points(group='timmins.display')
+
+try:
+    display = display_eps[0].load()
+except IndexError:
+    def display(text):
+        print(text)
+
+def hello_world():
+    display('Hello world')
+```
+
+На этом установка на стороне **timmins** заканчивается. Далее нам нужно реализовать плагин, реализующий точку входа `timmins.display`. Давайте назовем этот плагин **timmins-plugin-fancy** и настроим его со следующей структурой каталогов:
+
+```bash
+timmins-plugin-fancy
+├── pyproject.toml        # и/или setup.cfg, setup.py
+└── src
+    └── timmins_plugin_fancy
+        └── __init__.py
+```
+
+А затем внутри `src/timmins_plugin_fancy/__init__.py` мы можем поместить функцию с именем `excl_display()`, которая печатает заданный текст, окруженный восклицательными знаками:
+
+```python
+def excl_display(text):
+    print('!!!', text, '!!!')
+```
+
+Это функция, подобная `display()`, которую мы собираемся добавить в пакет **timmins**. Мы можем сделать это, добавив следующее в конфигурацию **timmins-plugin-fancy**:
+
+#### pyproject.toml
+
+```toml
+# Обратите внимание на кавычки вокруг timmins.display, чтобы экранировать точки .
+[project.entry-points."timmins.display"]
+excl = "timmins_plugin_fancy:excl_display"
+```
+
+#### setup.cfg
+
+```ini
+[options.entry_points]
+timmins.display =
+    excl = timmins_plugin_fancy:excl_display
+```
+
+#### setup.py
+
+```python
+from setuptools import setup
+
+setup(
+    # ...,
+    entry_points = {
+        'timmins.display': [
+            'excl = timmins_plugin_fancy:excl_display'
+        ]
+    }
+)
+```
+
+По сути, в этой конфигурации указано, что мы являемся точкой входа в группу `timmins.display`. Точка входа называется **excl** и относится к функции **excl\_display**, определенной пакетом **timmins-plugin-fancy**.
+
+Теперь, если мы установим и **timmins**, и **timmins-plugin-fancy**, мы должны получить следующее:
+
+```python
+>>> from timmins import hello_world
+
+>>> hello_world()
+!!! Hello world !!!
+```
+
+тогда как если мы установим только **timmins**, а не **timmins-plugin-fancy**, мы должны получить следующее:
+
+```python
+>>> from timmins import hello_world
+
+>>> hello_world()
+Hello world
+```
+
+Поэтому наш плагин работает.
+
+Наш плагин также мог бы определить несколько точек входа в группе `timmins.display`. Например, в `src/timmins_plugin_fancy/__init__.py` у нас могут быть две функции, подобные `display()`, следующим образом:
+
+```python
+def excl_display(text):
+    print('!!!', text, '!!!')
+
+def lined_display(text):
+    print(''.join(['-' for _ in text]))
+    print(text)
+    print(''.join(['-' for _ in text]))
+```
+
+Затем конфигурация **timmins-plugin-fancy** изменится на:
+
+#### pyproject.toml
+
+```toml
+[project.entry-points."timmins.display"]
+excl = "timmins_plugin_fancy:excl_display"
+lined = "timmins_plugin_fancy:lined_display"
+```
+
+#### setup.cfg
+
+```ini
+[options.entry_points]
+timmins.display =
+    excl = timmins_plugin_fancy:excl_display
+    lined = timmins_plugin_fancy:lined_display
+```
+
+#### setup.py
+
+```python
+from setuptools import setup
+
+setup(
+    # ...,
+    entry_points = {
+        'timmins.display': [
+            'excl = timmins_plugin_fancy:excl_display',
+            'lined = timmins_plugin_fancy:lined_display',
+        ]
+    }
+)
+```
+
+Что касается **timmins**, мы также можем использовать другую стратегию загрузки точек входа. Например, мы можем искать определенный стиль отображения:
+
+```python
+display_eps = entry_points(group='timmins.display')
+try:
+    display = display_eps['lined'].load()
+except KeyError:
+    # если 'lined' дисплей недоступен, используйте что-то другое
+    ...
+```
+
+Или мы также можем загрузить все плагины в данной группе. Хотя это может быть не очень полезно в нашем текущем примере, есть несколько сценариев, в которых это полезно:
+
+```python
+display_eps = entry_points(group='timmins.display')
+for ep in display_eps:
+    display = ep.load()
+    # сделать что-нибудь с дисплеем
+    ...
+```
+
+Еще один момент заключается в том, что в этом конкретном примере мы использовали плагины для настройки поведения функции (`display()`). В общем, мы можем использовать точки входа, чтобы плагины могли настраивать поведение не только функций, но и целых классов и модулей. Это отличается от сценария консоли/графического интерфейса, где точки входа могут ссылаться только на функции. Синтаксис, используемый для указания точек входа, остается таким же, как и для консольных/графических сценариев, и обсуждается в [последнем разделе](tochki-vkhoda-entry-poynts.md#sintaksis-tochek-vkhoda).
+
+{% hint style="success" %}
+**СОВЕТ**
+
+Рекомендуемым подходом для загрузки и импорта точек входа является модуль [importlib.metadata](https://docs.python.org/3/library/importlib.metadata.html#module-importlib.metadata), который является частью стандартной библиотеки, начиная с Python 3.8. Для более старых версий Python следует использовать его бэкпорт [importlib\_metadata](https://pypi.org/project/importlib\_metadata). При использовании бэкпорта единственное изменение, которое необходимо сделать, это заменить `importlib.metadata` на **importlib\_metadata**, т.е.
+
+```python
+from importlib_metadata import entry_points
+...
+```
+{% endhint %}
+
+Таким образом, точки входа позволяют пакету открывать свои функции для настройки с помощью плагинов. Пакет, запрашивающий точки входа, не должен иметь какой-либо зависимости или предварительных знаний о подключаемых модулях, реализующих точки входа, а последующие пользователи могут создавать функциональные возможности, объединяя подключаемые модули, реализующие точки входа.
+
 ## Синтаксис точек входа
