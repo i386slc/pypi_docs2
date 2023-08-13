@@ -567,3 +567,126 @@ settings.name == "admin"
 ## Чтение переменных настроек
 
 Экземпляр настроек **Dynaconf settings** — это объект, похожий на **словарь**, который предоставляет несколько способов доступа к переменным.
+
+```python
+from path.to.project.config import settings
+# или
+from django.conf import settings
+# или
+settings = app.config  # flask
+
+# чтение переменных настроек
+
+settings.username == "admin"                  # точечная нотация
+settings.PORT == settings.port == 9900        # без учета регистра
+isinstance(settings.port, int)                # автоматическое приведение типа
+settings.databases.name == "mydb"             # Обход вложенных ключей
+settings['password'] == "secret123"           # доступ к элементам как в словаре
+settings['databases.schema'] == "main"        # Обход вложенных элементов
+settings.get("nonexisting", "default value")  # Значения по умолчанию, как в словаре
+settings("number", cast="@int")               # настраиваемое принудительное
+                                              # приведение типа
+
+for key, value in settings.items():           # итерация как в словаре
+    print(key, value)
+```
+
+## Пробелы в ключах
+
+Если в ключе есть пробелы, к нему можно получить доступ, заменив пробел символом подчеркивания.
+
+```yaml
+ROOT:
+    MY KEY: "value"
+```
+
+```python
+settings.root.my_key == "value"
+settings.root["my key"] == "value"
+```
+
+## Валидация ваших настроек
+
+Dynaconf предлагает вам объект **Validator** для определения правил для вашей **схемы** настроек, это работает декларативно, и вы можете проверить свои настройки двумя способами.
+
+### Написание валидаторов как объектов Python
+
+В вашем `config.py`
+
+```python
+from dynaconf import Dynaconf, Validator
+
+settings = Dynaconf(
+    validators=[
+        Validator("name", eq="Bruno") & Validator("username", ne="admin"),
+        Validator("port", gte=5000, lte=8000),
+        Validator("host", must_exist=True) | Validator("bind", must_exist=True)
+    ]
+)
+```
+
+После передачи аргумента **validators** Dynaconf оценит каждое из правил до того, как ваши настройки будут впервые прочитаны.
+
+Альтернативный способ — регистрация валидаторов с помощью:
+
+```python
+settings.validators.register(Validator("field", **rules))
+```
+
+Вы также можете принудительно выполнить более раннюю проверку, выполнив вызов для **validate** после создания экземпляра настроек.
+
+```python
+settings.validators.validate()
+```
+
+В случае ошибок он вызовет **ValidationError** и выйдет со статусом 1 (полезно для CI)
+
+### Написание валидаторов в виде файла toml
+
+Вы также можете поместить файл `dynaconf_validators.toml` в корень вашего проекта.
+
+```toml
+[development]
+name = {must_exist=true}
+port = {gte=5000, lte=9000}
+```
+
+Следуя тем же правилам, которые используются в классе **Validator**, вы можете инициировать проверку через командную строку, используя:
+
+```bash
+dynaconf -i config.settings validate
+```
+
+Подробнее о [валидации](validaciya-v-dynaconf.md)
+
+## Зависимости
+
+### От поставщиков ПО
+
+Ядро Dynaconf не имеет зависимостей. Он использует сторонние копии внешних библиотек, таких как **python-box**, **click**, **python-dotenv**, **ruamel-yaml**, **python-toml**.
+
+### Дополнительные зависимости
+
+Чтобы использовать внешние сервисы, такие как **Redis** и **Hashicorp Vault**, необходимо установить дополнительные зависимости, используя аргумент `pip [extra]`.
+
+#### Vault
+
+```bash
+pip install dynaconf[vault]
+```
+
+#### Redis
+
+```bash
+pip install dynaconf[redis]
+```
+
+Подробнее о <mark style="color:red;">внешних загрузчиках</mark>
+
+## Лицензия
+
+Этот проект находится под лицензией MIT.
+
+## Еще
+
+Если вы ищете что-то похожее на **Dynaconf** для использования в своих проектах на **Rust**: [https://github.com/rubik/hydroconf](https://github.com/rubik/hydroconf)
