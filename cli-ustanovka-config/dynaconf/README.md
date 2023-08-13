@@ -367,3 +367,203 @@ settings = dynaconf.DjangoDynaconf(__name__)  # noqa
 {% endhint %}
 
 ## Определение ваших переменных настроек
+
+Dynaconf _**отдает приоритет**_ использованию [переменных среды](peremennye-okruzheniya-env-vars.md), и вы можете дополнительно сохранять настройки в [файлах настроек](faily-nastroek-dynaconf.md), используя любое расширение `toml|yaml|json|ini|py`.
+
+### В переменных окружения
+
+[Переменные среды](peremennye-okruzheniya-env-vars.md) загружаются Dynaconf, если они имеют префикс **DYNACONF\_** или имя **CUSTOM\_**, которое вы можете настроить в своем экземпляре настроек, или **FLASK\_** и **DJANGO\_** соответственно, если вы используете расширения.
+
+```bash
+export DYNACONF_FOO=BAR                      # строковое значение
+                                             # по умолчанию префикс DYNACONF_
+
+export DYNACONF_NUMBER=123                   # автоматически загружается как int
+
+export DJANGO_ALLOWED_HOSTS="['*', 'other']" # префикс расширения DJANGO_
+                                             # автоматически загружается как list
+
+export FLASK_DEBUG=true                      # префикс расширения FLASK_
+                                             # автоматически загружается как boolean
+
+export CUSTOM_NAME=Bruno                     # префикс CUSTOM_, как указано в
+                                             # Dynaconf(envvar_prefix="custom")
+
+export DYNACONF_NESTED__LEVEL__KEY=1         # Двойное подчеркивание
+                                             # обозначает вложенные настройки
+                                             # nested = {
+                                             #     "level": {"key": 1}
+                                             # }
+```
+
+Подробнее о [переменных окружения](peremennye-okruzheniya-env-vars.md).
+
+### В файлах
+
+**Опционально** вы можете хранить настройки в файлах, dynaconf поддерживает несколько форматов файлов, вам рекомендуется выбрать один формат, но вы также можете использовать смешанные форматы настроек в своем приложении.
+
+### Поддерживаемые форматы файлов
+
+* `.toml` — формат файла по умолчанию и рекомендуемый.
+* `.yaml|.yml` — рекомендуется для приложений Django.
+* `.json` — полезен для повторного использования существующих или экспортированных настроек.
+* `.ini` — полезно для повторного использования устаревших настроек.
+* `.py` — не рекомендуется, но поддерживается для обратной совместимости.
+* `.env` — полезно для автоматизации загрузки переменных окружения.
+
+{% hint style="info" %}
+Создайте свои настройки в нужном формате и укажите их в аргументе **settings\_files** в вашем экземпляре **dynaconf** или передайте их в `-f <format>` при использовании команды **dynaconf init**.
+{% endhint %}
+
+{% hint style="success" %}
+**Совет**
+
+Не можете найти нужный формат файла для ваших настроек? Вы можете создать свой собственный загрузчик и читать любой источник данных. Подробнее в [расширении dynaconf](rasshirennoe-ispolzovanie-dynaconf.md)
+{% endhint %}
+
+### Чтение настроек из файлов
+
+В файлах по умолчанию **dynaconf** загружает все существующие ключи и разделы как настройки первого уровня.
+
+#### settings.toml
+
+```toml
+name = "Bruno"
+```
+
+#### settings.yaml
+
+```yaml
+name: Bruno
+```
+
+#### settings.json
+
+```json
+{"name": "Bruno"}
+```
+
+#### settings.ini
+
+```ini
+name = 'Bruno'
+```
+
+#### settings.py
+
+```python
+NAME = "Bruno"
+```
+
+{% hint style="warning" %}
+в файлах `.py` **dynaconf** читает только переменные, написанные **ЗАГЛАВНЫМИ БУКВАМИ**.
+{% endhint %}
+
+Затем в коде вашего приложения:
+
+```python
+settings.name == "Bruno"
+```
+
+### Многоуровневые среды для файлов
+
+Также можно заставить dynaconf читать файлы, разделенные многоуровневыми средами, чтобы каждая секция или ключ первого уровня загружались как отдельная среда.
+
+{% hint style="warning" %}
+Чтобы включить многоуровневые среды, для аргумента **environments** должно быть установлено значение **True**, в противном случае dynaconf будет игнорировать слои и читать все ключи первого уровня как обычные значения.
+{% endhint %}
+
+#### config.py
+
+```python
+settings = Dynaconf(environments=True)
+```
+
+{% hint style="info" %}
+Вы можете определить пользовательскую среду, используя желаемое имя `[defualt]` и `[global]` — единственные среды, которые являются особыми. Вы можете, например, назвать это `[testing]` или `[anything]`.
+{% endhint %}
+
+#### settings.toml
+
+```toml
+[default]
+name = ""
+[development]
+name = "developer"
+[production]
+name = "admin"
+```
+
+#### settings.yaml
+
+```yaml
+default:
+    name: ''
+development:
+    name: developer
+production:
+    name: admin
+```
+
+#### settings.json
+
+```json
+{
+    "default": {
+        "name": ""
+    },
+    "development": {
+        "name": "developer"
+    },
+    "production": {
+        "name": "admin"
+    }
+}
+```
+
+#### settings.ini
+
+```ini
+[default]
+name = ""
+[development]
+name = "developer"
+[production]
+name = "admin"
+```
+
+#### program.py
+
+Затем в вашей программе вы можете использовать переменные среды для переключения сред.
+
+```bash
+export ENV_FOR_DYNACONF=development
+```
+
+```python
+settings.name == "developer"
+```
+
+```bash
+export ENV_FOR_DYNACONF=production
+```
+
+```python
+settings.name == "admin"
+```
+
+{% hint style="warning" %}
+В расширениях **Flask** и **Django** поведение по умолчанию уже является многоуровневой средой. Также для переключения среды вы используете `export FLASK_ENV=production` или `export DJANGO_ENV=production` соответственно.
+{% endhint %}
+
+{% hint style="success" %}
+**Совет**
+
+Также можно переключать среды, программно передавая `env="development"` классу **Dynaconf** при создании экземпляра.
+{% endhint %}
+
+Подробнее о [файлах настроек](faily-nastroek-dynaconf.md)
+
+## Чтение переменных настроек
+
+Экземпляр настроек **Dynaconf settings** — это объект, похожий на **словарь**, который предоставляет несколько способов доступа к переменным.
