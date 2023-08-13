@@ -1,6 +1,6 @@
 # dynaconf
 
-<figure><img src="../.gitbook/assets/1111.png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../../.gitbook/assets/1111.png" alt=""><figcaption></figcaption></figure>
 
 ## Характеристики
 
@@ -89,7 +89,7 @@ settings = Dynaconf(
 )
 ```
 
-Дополнительные параметры описаны в <mark style="color:purple;">Dynaconf Configuration</mark>.
+Дополнительные параметры описаны в [Dynaconf Configuration](kofiguraciya-dynaconf.md).
 
 #### settings.toml
 
@@ -107,7 +107,7 @@ a_dict = {hello="world"}
 other_level = "nested value"
 ```
 
-Подробнее в файлах настроек (<mark style="color:purple;">Settings files</mark>)
+Подробнее в файлах настроек ([Settings files](faily-nastroek-dynaconf.md))
 
 #### .secrets.toml
 
@@ -128,7 +128,7 @@ message = "This file doesn't go to your pub repo"
 .secrets.*
 ```
 
-подробнее о <mark style="color:purple;">секретах</mark>
+подробнее о [секретах](sekretnaya-informaciya-secrets.md)
 
 #### env vars
 
@@ -194,7 +194,7 @@ SQLALCHEMY_DB_URI = "postgresql://..."
 В **Flask** файлы настроек по умолчанию располагаются слоями в нескольких средах, вы можете отключить их, передав `environments=False` в расширение **FlaskDynaconf**.
 {% endhint %}
 
-Подробнее в файлах настроек (<mark style="color:purple;">Settings files</mark>)
+Подробнее в файлах настроек ([Settings files](faily-nastroek-dynaconf.md))
 
 #### .secrets.toml
 
@@ -216,7 +216,7 @@ message = "This file doesn't go to your pub repo"
 .secrets.*
 ```
 
-подробнее о <mark style="color:purple;">секретах</mark>
+подробнее о [секретах](sekretnaya-informaciya-secrets.md)
 
 #### env vars
 
@@ -228,7 +228,7 @@ export FLASK_NUMBER=789
 export FLASK_FOO=false
 ```
 
-Dynaconf также может **загружать ваши расширения Flask**, более подробную информацию см. в <mark style="color:purple;">расширении Flask</mark>.
+Dynaconf также может **загружать ваши расширения Flask**, более подробную информацию см. в [расширении Flask](flask-i-dynaconf.md).
 
 ### Использование Django
 
@@ -310,7 +310,7 @@ production:
 Файлы настроек Django по умолчанию располагаются слоями в нескольких средах, вы можете отключить их, передав `environments=False` в расширение **DjangoDynaconf**.
 {% endhint %}
 
-Подробнее в файлах настроек (<mark style="color:purple;">Settings files</mark>)
+Подробнее в файлах настроек ([Settings files](faily-nastroek-dynaconf.md))
 
 #### .secrets.toml
 
@@ -332,7 +332,7 @@ production:
 .secrets.*
 ```
 
-подробнее о <mark style="color:purple;">секретах</mark>
+подробнее о [секретах](sekretnaya-informaciya-secrets.md)
 
 #### env vars
 
@@ -358,12 +358,12 @@ settings = dynaconf.DjangoDynaconf(__name__)  # noqa
 # HERE ENDS DYNACONF EXTENSION LOAD (No more code below this line)
 ```
 
-Подробнее в <mark style="color:purple;">расширении Django</mark>
+Подробнее в [расширении Django](django-i-dynaconf.md)
 
 {% hint style="success" %}
 **Совет**
 
-В интерфейсе командной строки **dynaconf** есть более полезные команды, такие как **list** | **export**, **init**, **write** и **validate**. Подробнее о <mark style="color:purple;">CLI</mark>
+В интерфейсе командной строки **dynaconf** есть более полезные команды, такие как **list** | **export**, **init**, **write** и **validate**. Подробнее о [CLI](cli-dynaconf.md)
 {% endhint %}
 
 ## Определение ваших переменных настроек
