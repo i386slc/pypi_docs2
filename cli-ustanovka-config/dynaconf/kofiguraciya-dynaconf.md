@@ -74,3 +74,163 @@ YAML считывает пустые значения как `None` в этом 
 * env-var - `CORE_LOADERS_FOR_DYNACONF`
 
 Список включенных загрузчиков, которые dynaconf будет использовать для загрузки файлов настроек. Если ваше приложение использует только YAML, вы можете, например, изменить его на `['YAML']`, чтобы dynaconf прекратил попытки загрузки toml и других форматов.
+
+### **default\_env**
+
+* Тип - `str`
+* По умолчанию - `"default"`
+
+Когда `environments=True`, это определяет имя среды, которое будет содержать значения по умолчанию/резервные значения.
+
+Например:
+
+```toml
+# settings.toml
+
+[my_default]
+test_value = "test value from default"
+other_value = "other value from default"
+
+[development]
+# нет test_value здесь
+other_value = "other value from dev"
+```
+
+```python
+>>> settings = Dynaconf(
+...     settings_file="settings.toml",
+...     environments=True,
+...     default_env="my_default",
+...     env="development", # это активная среда по умолчанию
+... )
+
+>>> settings.other_value
+"other value from dev"
+
+>>> settings.test_value
+"test value from default" # запасной вариант `my_default`
+```
+
+{% hint style="info" %}
+**default\_env** не является средой, которая будет активна при запуске. Для этого см. [env](kofiguraciya-dynaconf.md#env).
+{% endhint %}
+
+### **dotenv\_override**
+
+* Тип - `bool`
+* По умолчанию - `False`
+* env-var - `DOTENV_OVERRIDE_FOR_DYNACONF`
+
+Когда **load\_dotenv** включен, это определяет, будут ли переменные в `.env` переопределять значения, экспортированные как **env vars**.
+
+### **dotenv\_path**
+
+* Тип - `str`
+* По умолчанию - `"."` (или то же, что и **project\_root**)
+* env var - `DOTENV_PATH_FOR_DYNACONF`
+
+Устанавливает расположение файла `.env` либо на полный путь, либо на содержащий его каталог.
+
+### **dotenv\_verbose**
+
+* Тип - `bool`
+* По умолчанию - `False`
+* env-var - `DOTENV_VERBOSE_FOR_DYNACONF`
+
+Контролирует многословие загрузчика **dotenv**.
+
+### **dotted\_lookup**
+
+* Тип - `bool`
+* По умолчанию - `False`
+* env-var - `DOTTED_LOOKUP_FOR_DYNACONF`
+
+По умолчанию dynaconf читает `.` в качестве разделителя при установке и чтении значений. Эту функцию можно отключить, установив `dotted_lookup=False`
+
+{% hint style="success" %}
+**Совет**
+
+Это также можно установить для каждого файла с помощью `dynaconf_dotted_lookup: false` на верхнем уровне файла и работает для установки значений. Для чтения вы можете передать `settings.get("key.other", dotted_lookup=False)`
+{% endhint %}
+
+### **encoding**
+
+* Тип - `str`
+* По умолчанию - `"utf-8"`
+* env-var - `ENCODING_FOR_DYNACONF`
+
+Какую кодировку использовать при загрузке файлов настроек.
+
+### **environments**
+
+* Тип - `bool`
+* По умолчанию - `False`
+* env-var - `ENVIRONMENTS_FOR_DYNACONF`
+
+Определяет, будет ли dynaconf работать в многоуровневой среде, допускающей разделение среды `[default]`, `[development]`, `[production]` и других.
+
+### envvar
+
+* Тип - `str`
+* По умолчанию - `SETTINGS_FILE_FOR_DYNACONF`
+* env-var - `ENVVAR_FOR_DYNACONF`
+
+Задает имя переменной среды, которое будет использоваться для загрузки файлов настроек.
+
+Например:
+
+```bash
+# устанавливает MY_SETTINGS_PATH в качестве новой переменной окружения,
+# определяющей пути к файлам настроек.
+export ENVVAR_FOR_DYNACONF="MY_SETTINGS_PATH"
+
+# теперь его значение будет переопределять значения *settings_file*
+# или SETTINGS_FILE_FOR_DYNACONF.
+export MY_SETTINGS_PATH="path.to.settings"
+```
+
+{% hint style="warning" %}
+**Устаревший вариант**
+
+Предпочтительный способ определения файлов настроек — через файл [settings\_file](kofiguraciya-dynaconf.md#settings\_file-or-settings\_files). Подумайте, действительно ли вам нужно это использовать.
+{% endhint %}
+
+### **envvar\_prefix**
+
+* Тип - `str`
+* По умолчанию - `"DYNACONF"`
+* env-var - `ENVVAR_PREFIX_FOR_DYNACONF`
+
+Префикс, используемый dynaconf для загрузки значений из переменных среды. Возможно, вы захотите, чтобы ваши пользователи экспортировали значения, используя имя вашего приложения, например: `export MYPROGRAM_DEBUG=true`
+
+### env
+
+* Тип - `str`
+* По умолчанию - `"development"`
+* env-var - `ENV_FOR_DYNACONF`
+
+Когда **environments** установлена, она управляет текущей средой, используемой во время выполнения. Обычно это устанавливается с помощью переменной среды.
+
+```bash
+export ENV_FOR_DYNACONF=production
+```
+
+Или при выполнении: `ENV_FOR_DYNACONF=production program.py`
+
+### **env\_switcher**
+
+* Тип - `str`
+* По умолчанию - `"ENV_FOR_DYNACONF"`
+* env-var - `ENVVAR_SWITCHER_FOR_DYNACONF`
+
+По умолчанию **ENV\_FOR\_DYNACONF** — это переменная, используемая для переключения **envs**, но вы можете установить для нее другое имя переменной. пример: `MYPROGRAM_ENV=production`
+
+### **filtering\_strategy**
+
+* Тип - `class`
+* По умолчанию - `None`
+* env-var - `FILTERING_STRATEGY_FOR_DYNACONF`
+
+Вызываемый объект приема данных для фильтрации, встроенные функции в настоящее время включают **PrefixFilter**
+
+### **settings\_file** (или **settings\_files**) <a href="#settings_file-or-settings_files" id="settings_file-or-settings_files"></a>
