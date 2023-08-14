@@ -233,4 +233,12 @@ export ENV_FOR_DYNACONF=production
 
 Вызываемый объект приема данных для фильтрации, встроенные функции в настоящее время включают **PrefixFilter**
 
+### **force\_env**
+
+* Тип - `str`
+* По умолчанию - `None`
+* env-var - `FORCE_ENV_FOR_DYNACONF`
+
+Когда **environments** включена, может быть полезно принудительно использовать конкретную среду для целей тестирования.
+
 ### **settings\_file** (или **settings\_files**) <a href="#settings_file-or-settings_files" id="settings_file-or-settings_files"></a>
