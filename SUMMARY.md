@@ -72,7 +72,7 @@
   * [click API](cli-ustanovka-config/click/click-api.md)
   * [click Разное](cli-ustanovka-config/click/click-raznoe.md)
 * [dynaconf](cli-ustanovka-config/dynaconf/README.md)
-  * [Кофигурация dynaconf](cli-ustanovka-config/dynaconf/kofiguraciya-dynaconf.md)
+  * [Конфигурация dynaconf](cli-ustanovka-config/dynaconf/konfiguraciya-dynaconf.md)
   * [Переменные окружения (env vars)](cli-ustanovka-config/dynaconf/peremennye-okruzheniya-env-vars.md)
   * [Файлы настроек dynaconf](cli-ustanovka-config/dynaconf/faily-nastroek-dynaconf.md)
   * [Секретная информация (secrets)](cli-ustanovka-config/dynaconf/sekretnaya-informaciya-secrets.md)

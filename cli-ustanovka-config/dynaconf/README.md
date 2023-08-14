@@ -89,7 +89,7 @@ settings = Dynaconf(
 )
 ```
 
-Дополнительные параметры описаны в [Dynaconf Configuration](kofiguraciya-dynaconf.md).
+Дополнительные параметры описаны в [Dynaconf Configuration](konfiguraciya-dynaconf.md).
 
 #### settings.toml
 

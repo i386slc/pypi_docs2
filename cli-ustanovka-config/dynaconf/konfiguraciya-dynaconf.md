@@ -1,4 +1,4 @@
-# Кофигурация dynaconf
+# Конфигурация dynaconf
 
 При создании экземпляра объекта настроек Dynaconf **settings** есть несколько настраиваемых параметров.
 
@@ -112,7 +112,7 @@ other_value = "other value from dev"
 ```
 
 {% hint style="info" %}
-**default\_env** не является средой, которая будет активна при запуске. Для этого см. [env](kofiguraciya-dynaconf.md#env).
+**default\_env** не является средой, которая будет активна при запуске. Для этого см. [env](konfiguraciya-dynaconf.md#env).
 {% endhint %}
 
 ### **dotenv\_override**
@@ -192,7 +192,7 @@ export MY_SETTINGS_PATH="path.to.settings"
 {% hint style="warning" %}
 **Устаревший вариант**
 
-Предпочтительный способ определения файлов настроек — через файл [settings\_file](kofiguraciya-dynaconf.md#settings\_file-or-settings\_files). Подумайте, действительно ли вам нужно это использовать.
+Предпочтительный способ определения файлов настроек — через файл [settings\_file](konfiguraciya-dynaconf.md#settings\_file-or-settings\_files). Подумайте, действительно ли вам нужно это использовать.
 {% endhint %}
 
 ### **envvar\_prefix**
