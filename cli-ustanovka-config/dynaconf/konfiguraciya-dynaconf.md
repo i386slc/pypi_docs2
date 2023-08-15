@@ -563,3 +563,57 @@ settings.update({"value_b": "foo"}, validate=False) # будет обходит�
 settings.update({"value_b": "foo"}, validate=True) # будет вызывать .validate()
 settings.update({"value_b": "foo"}) # будет вызывать .validate_all()
 ```
+
+### validators
+
+* Тип - `list`
+* По умолчанию - `[]`
+* env-var - `VALIDATORS_FOR_DYNACONF`
+
+Список валидаторов, которые будут запущены сразу после инициализации **Dynaconf**.
+
+```python
+validators=[
+    Validator("FOO", must_exist=True)
+]
+```
+
+### vault\_enabled
+
+* Тип - `bool`
+* По умолчанию - `False`
+* env-var - `VAULT_ENABLED_FOR_DYNACONF`
+
+Если установлено значение `True`, dynaconf будет включать `dynaconf.loaders.vault_loader` в список загрузчиков **loaders**.
+
+### vault
+
+* Тип - `dict`
+* По умолчанию - `{ слишком длинный, см. ниже }`
+* env-var - `VAULT_FOR_DYNACONF`
+
+Когда **vault\_enabled** имеет значение `True`, словарь, содержащий настройки хранилища.
+
+```python
+default = {
+    "url": "VAULT_URL_FOR_DYNACONF" or f"{vault_scheme}://{vault_host}:{vault_port}",
+    "token": "VAULT_TOKEN_FOR_DYNACONF" or None,
+    "cert": "VAULT_CERT_FOR_DYNACONF" or  None,
+    "verify": "VAULT_VERIFY_FOR_DYNACONF" or None,
+    "timeout": "VAULT_TIMEOUT_FOR_DYNACONF" or None,
+    "proxies": "VAULT_PROXIES_FOR_DYNACONF" or None,
+    "allow_redirects": "VAULT_ALLOW_REDIRECTS_FOR_DYNACONF" or None,
+}
+```
+
+Подробнее о [Secrets](sekretnaya-informaciya-secrets.md)
+
+### yaml\_loader
+
+* Тип - `str` (опционально, см. ниже)
+* По умолчанию - `full_load`
+* env-var - `YAML_LOADER_FOR_DYNACONF`
+
+Загрузчик для YAML.
+
+Параметры: `"safe_load"`, `"unsafe_load"`, `"full_load"`
