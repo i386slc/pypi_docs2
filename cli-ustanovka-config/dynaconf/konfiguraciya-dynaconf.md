@@ -503,3 +503,63 @@ skip_files=["path/to/ignored.toml"]
 ```
 
 ### sysenv\_fallback
+
+* Тип - `bool | list[str]`
+* По умолчанию - `False`
+* env-var - `SYSENV_FALLBACK_FOR_DYNACONF`
+
+Определяет, будет ли dynaconf пытаться загрузить системные переменные среды (без префикса) в качестве запасного варианта при использовании `settings.get()`.
+
+Допустимые варианты:
+
+* `False` (по умолчанию): не будет пытаться загрузить системную среду **envvar**
+* `True`: попытается загрузить **sys envvar** для любого имени, запрошенного в `get()`
+* `list[str]`: попытается загрузить **sys envvar** для имен, указанных в списке.
+
+Это поведение также можно определить для каждого вызова, указав параметр **sysenv\_fallback** в `settings.get()`.
+
+Пример:
+
+```python
+from dynaconf import Dynaconf
+
+# будет искать PATH (верхний регистр) в переменных системной среды
+settings = Dynaconf(sysenv_fallback=True)
+settings.get("path")
+
+# может быть установлено для каждого вызова
+settings = Dynaconf()
+settings.get("path", sysenv_fallback=True)
+
+# если используется список, он фильтрует разрешенные имена.
+settings = Dynaconf(sysenv_fallback=["path"])
+settings.get("path")
+settings.get("user") # не буду пытаться загружать без префикса USER
+```
+
+### validate\_on\_update
+
+* Тип - `False | True | "all"`
+* По умолчанию - `False`
+* env-var - `VALIDATE_ON_UPDATE_FOR_DYNACONF`
+
+Определяет, будет ли запускаться проверка при обновлении экземпляра Dynaconf с помощью методов `update()`, `set()` или `load_file()`. Также определяет, какая стратегия повышения будет использоваться (см. подробнее о проверке [Validation](validaciya-v-dynaconf.md#lenivaya-validaciya)).
+
+Допустимые варианты:
+
+* `False` (по умолчанию): автозапуск отключен
+* `True`: срабатывает как `settings.validate()`, который вызывается при первых ошибках
+* `"all"`: триггер как `settings.validate_all()`, который накапливает ошибки
+
+Это поведение также может быть определено для каждого вызова. Просто укажите параметр validate для любого из методов обновления данных.
+
+Пример:
+
+```python
+settings = Dynaconf(validate_on_update="all")
+settings.validators.register(Validator("value_a", must_exist=True))
+
+settings.update({"value_b": "foo"}, validate=False) # будет обходить проверку
+settings.update({"value_b": "foo"}, validate=True) # будет вызывать .validate()
+settings.update({"value_b": "foo"}) # будет вызывать .validate_all()
+```
