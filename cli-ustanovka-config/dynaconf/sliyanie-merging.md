@@ -212,3 +212,119 @@ settings.SCRIPTS == ['install.sh', 'dev.sh', 'test.sh', 'deploy.sh', 'run.sh']
 ## Локальные файлы конфигурации и слияние с существующими данными
 
 > Новое в версии `2.2.0`
+
+Эта функция полезна для поддержки общего набора файлов конфигурации для команды, но при этом позволяет выполнять локальную настройку.
+
+Любой файл, соответствующий поиску glob `*.local.*`, будет прочитан в конце порядка загрузки файлов. Таким образом, локальные файлы настроек могут быть, например, не привязаны к репозиторию с контролем версий. (например, добавьте `**/*.local*` в свой `.gitignore`)
+
+Итак, если у вас есть `settings.toml`, Dynaconf загрузит его и, в конце концов, также попытается загрузить файл с именем `settings.local.toml`, если он существует. И то же самое относится ко всем другим поддерживаемым расширениям `settings.local.{py,json,yaml,toml,ini,cfg}`
+
+Пример:
+
+```toml
+# settings.toml        # <-- 1-й загруженный
+[default]
+colors = ["green", "blue"]
+parameters = {enabled=true, number=42}
+
+# .secrets.toml        # <-- 2-й загруженный
+# (переопределяет предыдущие существующие переменные)
+[default]
+password = 1234
+
+# settings.local.toml  # <-- 3-й загруженный
+# (переопределяет предыдущие существующие переменные)
+[default]
+colors = ["pink"]
+parameters = {enabled=false}
+password = 9999
+```
+
+Таким образом, с приведенным выше, например, значения будут:
+
+```python
+settings.COLORS == ["pink"]
+settings.PARAMETERS == {"enabled": False}
+settings.PASSWORD == 9999
+```
+
+Для каждого загружаемого файла dynaconf переопределяет **override** предыдущие существующие ключи, поэтому, если вы хотите добавить новые значения к существующим переменным, вы можете использовать 3 стратегии.
+
+### Отметить локальный файл как полностью объединенный
+
+> Новое в версии `2.2.0`
+
+```toml
+# settings.local.toml
+dynaconf_merge = true
+[default]
+colors = ["pink"]
+parameters = {enabled=false}
+```
+
+Если добавить **dynaconf\_merge** в верхний корень файла, весь файл будет помечен для слияния.
+
+Затем значения будут обновлены в существующих структурах данных.
+
+```python
+settings.COLORS == ["pink", "green", "blue"]
+settings.PARAMETERS == {"enabled": False, "number": 42}
+settings.PASSWORD == 9999
+```
+
+Вы также можете пометить одну среду **env**, например `[development]`, для слияния.
+
+```toml
+# settings.local.toml
+[development]
+dynaconf_merge = true
+colors = ["pink"]
+parameters = {enabled=false}
+```
+
+### Токен слияния dynaconf
+
+```toml
+# settings.local.toml
+[default]
+colors = ["pink", "dynaconf_merge"]
+parameters = {enabled=false, dynaconf_merge=true}
+```
+
+При добавлении **dynaconf\_merge** в список list или словарь dict они будут помечены как кандидаты на слияние.
+
+Затем значения будут обновлены в существующих структурах данных.
+
+```python
+settings.COLORS == ["pink", "green", "blue"]
+settings.PARAMETERS == {"enabled": False, "number": 42}
+settings.PASSWORD == 9999
+```
+
+> Новое в версии `2.2.0`
+
+И это также работает с **dynaconf\_merge** в качестве ключей dict, содержащих значение для слияния.
+
+```toml
+# settings.local.toml
+[default.colors]
+# <-- значение ["pink"] будет объединено с существующими цветами
+dynaconf_merge = ["pink"]
+
+[default.parameters]
+dynaconf_merge = {enabled=false}
+```
+
+### Dunder слияние для вложенных структур
+
+Для вложенных структур рекомендуется использовать слияние **dunder**, потому что его легче читать, а также нет ограничений с точки зрения уровней вложенности.
+
+```toml
+# settings.local.yaml
+[default]
+parameters__enabled = false
+```
+
+Использование `__` для обозначения вложенного уровня гарантирует, что ключ будет объединен с существующими значениями, подробнее см. в разделе об [объединении существующих значений](sliyanie-merging.md#obedinenie-sushestvuyushikh-struktur-dannykh).
+
+## Вложенные ключи в словари через переменные окружения.
