@@ -251,4 +251,55 @@ export ENV_FOR_DYNACONF=production
 
 `fresh_vars=["password"]` поэтому при доступе к `settings.password` он будет прочитан из источника, а не из кэша.
 
+### includes
+
+* Тип - `list | str`
+* По умолчанию - `[]`
+* env-var - `INCLUDES_FOR_DYNACONF`
+
+После загрузки файлов, указанных в **settings\_files**, dynaconf загрузит все файлы, добавленные во **includes**, в процессе пост-загрузки. Обратите внимание, что:
+
+* glob разрешен
+* Когда даны относительные пути, он будет использовать [root\_path](konfiguraciya-dynaconf.md#settings\_file-or-settings\_files) в качестве их базового каталога.
+* Если **root\_path** не указан явно, произойдет возврат к каталогу последней загруженной настройки или к **cwd**. Например:
+
+```python
+# будет искать src/extra.yaml
+Dynaconf(root_path="src/", includes="extra.yaml")
+
+# будет искать conf/extra.yaml
+Dynaconf(settings_files="conf/settings.yaml", includes="extra.yaml")
+
+# будет искать $PWD/extra.yaml
+Dynaconf(includes="extra.yaml")
+```
+
+{% hint style="success" %}
+**Совет**
+
+**includes** также могут быть добавлены внутри самих файлов, например:
+
+```python
+dynaconf_include: ['otherfile.toml'] # или
+dynaconf_include: 'otherfile.toml'
+key: "value"
+```
+
+Или используя env vars:
+
+```bash
+export INCLUDES_FOR_DYNACONF="['otherfile.toml', 'path/*.yaml']"
+```
+{% endhint %}
+
+### loaders
+
+* Тип - `list`
+* По умолчанию - `['dynaconf.loaders.env_loader']`
+* env-var - `LOADERS_FOR_DYNACONF`
+
+Список загрузчиков, которые dynaconf будет запускать после основных загрузчиков, этот список полезен для включения [пользовательских загрузчиков](rasshirennoe-ispolzovanie-dynaconf.md), а также для управления загрузкой переменных env в качестве последнего шага.
+
+### **root\_path** <a href="#settings_file-or-settings_files" id="settings_file-or-settings_files"></a>
+
 ### **settings\_file** (или **settings\_files**) <a href="#settings_file-or-settings_files" id="settings_file-or-settings_files"></a>
