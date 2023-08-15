@@ -328,3 +328,221 @@ parameters__enabled = false
 Использование `__` для обозначения вложенного уровня гарантирует, что ключ будет объединен с существующими значениями, подробнее см. в разделе об [объединении существующих значений](sliyanie-merging.md#obedinenie-sushestvuyushikh-struktur-dannykh).
 
 ## Вложенные ключи в словари через переменные окружения.
+
+> **Новое в версии 2.1.0**
+>
+> Это полезно для настроек Django.
+
+Допустим, у вас есть такая конфигурация:
+
+`settings.py`
+
+```python
+DATABASES = {
+    'default': {
+        'NAME': 'db',
+        'ENGINE': 'module.foo.engine',
+        'ARGS': {'timeout': 30}
+    }
+}
+```
+
+И теперь вы хотите изменить значения **ENGINE** на `other.module`, через переменные среды вы можете использовать формат `${ENVVAR_PREFIX}_${VARIABLE}__${NESTED_ITEM}__${NESTED_ITEM}`
+
+Каждый `__` (**dunder**, также известный как двойное подчеркивание) обозначает доступ к вложенным элементам в словаре.
+
+Таким образом
+
+```python
+DATABASES['default']['ENGINE'] = 'other.module'
+```
+
+Может быть выражено как переменные среды:
+
+```bash
+export DYNACONF_DATABASES__default__ENGINE=other.module
+```
+
+{% hint style="info" %}
+если вы используете расширение Django, то префикс будет **DJANGO\_** вместо **DYNACONF\_** и таким же, если вы используете **FLASK\_** или пользовательский префикс, если вы настроили **ENVVAR\_PREFIX**.
+{% endhint %}
+
+Это приведет к
+
+```python
+DATABASES = {
+    'default': {
+        'NAME': 'db',
+        'ENGINE': 'other.module',
+        'ARGS': {'timeout': 30}
+    }
+}
+```
+
+{% hint style="warning" %}
+клавиши нижнего регистра соблюдаются только в nix-системах. К сожалению, переменные среды Windows нечувствительны к регистру, и Python читает их как все буквы верхнего регистра, а это означает, что если вы работаете в Windows, словарь может содержать только ключи верхнего регистра. **Также\*** только ключи первого уровня нечувствительны к регистру, что означает, что D`YNACONF_FOO__BAR=1` отличается от `DYNACONF_FOO__bar=1`.
+{% endhint %}
+
+**Другими словами**, за исключением ключа первого уровня, вы должны строго следовать регистру переменного ключа.
+
+Теперь, если вы хотите добавить новый элемент в ключ **ARGS**:
+
+```bash
+export DYNACONF_DATABASES__default__ARGS__retries=10
+```
+
+Это приведет к
+
+```python
+DATABASES = {
+    'default': {
+        'NAME': 'db',
+        'ENGINE': 'other.module',
+        'ARGS': {'timeout': 30, 'retries': 10}
+    }
+}
+```
+
+и вы также можете передать **toml** как словарь для слияния с существующим ключом **ARGS**, используя токен **@merge**.
+
+> **новое в 3.0.0**
+
+```bash
+# как toml (рекомендуется)
+export DYNACONF_DATABASES__default__ARGS='@merge {timeout=50, size=1}'
+# ИЛИ как json
+export DYNACONF_DATABASES__default__ARGS='@merge {"timeout": 50, "size": 1}'
+# ИЛИ как простая пара ключей
+export DYNACONF_DATABASES__default__ARGS='@merge timeout=50,size=1'
+```
+
+приведет к
+
+```python
+DATABASES = {
+    'default': {
+        'NAME': 'db',
+        'ENGINE': 'other.module',
+        'ARGS': {'retries': 10, 'timeout': 50, 'size': 1}
+    }
+}
+```
+
+Теперь, если вы хотите очистить существующий вложенный атрибут, вы можете просто присвоить новое значение.
+
+```bash
+# как TOML: пустой словарь `"{}"`
+export DYNACONF_DATABASES__default__ARGS='{}'
+```
+
+Это приведет к
+
+```python
+DATABASES = {
+    'default': {
+        'NAME': 'db',
+        'ENGINE': 'other.module',
+        'ARGS': {}
+    }
+}
+```
+
+```bash
+# Как TOML:  словарь (рекомендуется)
+export DYNACONF_DATABASES__default__ARGS='{timeout=90}'
+```
+
+Это приведет к
+
+```python
+DATABASES = {
+    'default': {
+        'NAME': 'db',
+        'ENGINE': 'other.module',
+        'ARGS': {'timeout': 90}
+    }
+}
+```
+
+И если в любом случае вам нужно полностью удалить этот ключ из словаря:
+
+```bash
+export DYNACONF_DATABASES__default__ARGS='@del'
+```
+
+Это приведет к
+
+```python
+DATABASES = {
+    'default': {
+        'NAME': 'db',
+        'ENGINE': 'other.module'
+    }
+}
+```
+
+## Использование отметки dynaconf\_merge в файлах конфигурации
+
+> Новое в версии 2.0.0
+
+Для слияния экспортированных переменных есть токены **dynaconf\_merge**. Пример:
+
+Ваш основной файл настроек (например, `settings.toml`) имеет существующую настройку словаря **DATABASE** в `[default]` env.
+
+Теперь вы хотите внести свой вклад в тот же ключ **DATABASE**, добавив новые ключи, поэтому вы можете использовать **dynaconf\_merge** в конце вашего словаря:
+
+В конкретных `[envs]`
+
+```toml
+[default]
+database = {host="server.com", user="default"}
+
+[development]
+database = {user="dev_user", dynaconf_merge=true}
+```
+
+или
+
+> Новое в версии 2.0.0
+
+```toml
+[default]
+database = {host="server.com", user="default"}
+
+[development.database]
+dynaconf_merge = {user="dev_user"}
+```
+
+В переменной среды используйте токен **@merge**:
+
+> Новое в версии 2.0.0
+
+```bash
+# Envvar в формате Toml
+export DYNACONF_DATABASE='@merge {password=1234}'
+```
+
+или **dunder** (рекомендуется)
+
+```bash
+# Envvar в формате Toml
+export DYNACONF_DATABASE__PASSWORD=1234
+```
+
+Конечный результат будет в среде `[development]`:
+
+```python
+settings.DATABASE == {'host': 'server.com', 'user': 'dev_user', 'password': 1234}
+```
+
+{% hint style="info" %}
+**ВНИМАНИЕ!** Использование **MERGE\_ENABLED\_FOR\_DYNACONF** может привести к неожиданным результатам, поскольку у вас нет детального контроля над тем, что объединяется или перезаписывается, поэтому рекомендуется использовать другие параметры.
+{% endhint %}
+
+## Известные предостережения
+
+Функциональные возможности **dynaconf\_merge** и **@merge** работают только для ключей первого уровня, они не будут объединять подчиненные или вложенные списки (пока).
+
+## Другие примеры
+
+Взгляните на [папку примеров](https://github.com/dynaconf/dynaconf/tree/master/example), чтобы увидеть несколько примеров использования различных форматов файлов и функций.
