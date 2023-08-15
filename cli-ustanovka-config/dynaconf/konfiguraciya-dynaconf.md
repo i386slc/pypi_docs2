@@ -352,6 +352,92 @@ data = {address='server.com'}
 
 В противном случае будет только то, что указано в последнем загруженном файле. подробнее о [слиянии стратегий](sliyanie-merging.md)
 
+### nested\_separator
+
+* Тип - `str`
+* По умолчанию - `"__"`  (двойное подчеркивание)
+* env-var - `NESTED_SEPARATOR_FOR_DYNACONF`
+
+Одной из [стратегий слияния](sliyanie-merging.md) является использование `__` для доступа к структурам данных вложенного уровня. По умолчанию разделителем является `__` (двойное подчеркивание), эта переменная позволяет вам изменить его.
+
+Пример:
+
+```bash
+export DYNACONF_DATABASES__default__ENGINE__Address="0.0.0.0"
+```
+
+генерирует:
+
+```python
+DATABASES = {
+    "default": {
+        "ENGINE": {
+            "Address": "0.0.0.0"
+        }
+    }
+}
+```
+
+{% hint style="warning" %}
+Выберите то, что подходит для **env vars**, обычно вам не нужно менять эту переменную.
+{% endhint %}
+
+{% hint style="warning" %}
+В Windows env vars все преобразуются в верхний регистр.
+{% endhint %}
+
+### preload
+
+* Тип - `list | str`
+* По умолчанию - `[]`
+* env-var - `PRELOAD_FOR_DYNACONF`
+
+Иногда вам может понадобиться загрузить какой-то файл, прежде чем dynaconf начнет искать свои файлы настроек **settings\_files** или **includes**, например, вы можете иметь `dynaconf.toml` для хранения конфигурации dynaconf.
+
+### redis\_enabled
+
+* Тип - `bool`
+* По умолчанию - `False`
+* env-var - `REDIS_ENABLED_FOR_DYNACONF`
+
+Если установлено значение `True`, dynaconf будет включать `dynaconf.loaders.redis_loaders` в список загрузчиков **loaders**.
+
+### redis
+
+* Тип - `dict`
+* По умолчанию - `{ слишком длинный, см. ниже }`
+* env-var - `REDIS_FOR_DYNACONF`
+
+Когда **redis\_enabled** имеет значение `True`, словарь, содержащий настройки redis.
+
+```python
+default = {
+    "host": "REDIS_HOST_FOR_DYNACONF" or "localhost",
+    "port": int("REDIS_PORT_FOR_DYNACONF" or 6379),
+    "db": int("REDIS_DB_FOR_DYNACONF" or 0),
+    "decode_responses": "REDIS_DECODE_FOR_DYNACONF" or True,
+}
+```
+
 ### **root\_path** <a href="#settings_file-or-settings_files" id="settings_file-or-settings_files"></a>
+
+* Тип - `str`
+* По умолчанию - `None`
+* env-var - `ROOT_PATH_FOR_DYNACONF`
+
+Рабочий путь для dynaconf, используемый в качестве отправной точки при поиске файлов.
+
+Обратите внимание, что:
+
+* Для относительного пути в качестве базового пути используется **cwd**.
+* Если явно не задано, внутреннее значение для **root\_path** будет установлено следующим образом:
+  * Место последнего загруженного файла, если какие-либо файлы уже были загружены
+  * CWD
+
+Подробнее читайте в <mark style="color:red;">settings\_files</mark>.
+
+{% hint style="info" %}
+**cwd** — это место, откуда был вызван интерпретатор Python.
+{% endhint %}
 
 ### **settings\_file** (или **settings\_files**) <a href="#settings_file-or-settings_files" id="settings_file-or-settings_files"></a>
