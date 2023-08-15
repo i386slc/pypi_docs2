@@ -298,7 +298,59 @@ export INCLUDES_FOR_DYNACONF="['otherfile.toml', 'path/*.yaml']"
 * По умолчанию - `['dynaconf.loaders.env_loader']`
 * env-var - `LOADERS_FOR_DYNACONF`
 
-Список загрузчиков, которые dynaconf будет запускать после основных загрузчиков, этот список полезен для включения [пользовательских загрузчиков](rasshirennoe-ispolzovanie-dynaconf.md), а также для управления загрузкой переменных env в качестве последнего шага.
+Список загрузчиков, которые dynaconf будет запускать после основных загрузчиков, этот список полезен для включения [пользовательских загрузчиков](rasshirennoe-ispolzovanie-dynaconf.md#sozdanie-novykh-zagruzchikov), а также для управления загрузкой переменных **env** в качестве последнего шага.
+
+{% hint style="warning" %}
+По умолчанию **env\_loader** будет последним в этом списке, поэтому он гарантирует, что переменные среды имеют приоритет в соответствии с философией Unix.
+{% endhint %}
+
+Узнать больше о [загрузчиках](rasshirennoe-ispolzovanie-dynaconf.md)
+
+### load\_dotenv
+
+* Тип - `bool`
+* По умолчанию - `False`
+* env-var - `LOAD_DOTENV_FOR_DYNACONF`
+
+При включении dynaconf попытается загрузить переменные из файла `.env`.
+
+### lowercase\_read
+
+* Тип - `bool`
+* По умолчанию - `True`
+* env-var - `LOWERCASE_READ_FOR_DYNACONF`
+
+По умолчанию dynaconf разрешает доступ к переменным первого уровня в нижнем регистре, поэтому `settings.foo` и `settings.FOO` эквивалентны (без учета регистра). При необходимости его можно отключить.
+
+### merge\_enabled
+
+* Тип - `bool`
+* По умолчанию - `False`
+* env-var - `MERGE_ENABLED_FOR_DYNACONF`
+
+Если указанный Dynaconf входит в режим **GLOBAL MERGE** и при загрузке новых файлов или источников не переопределяет, а объединяет структуры данных по умолчанию.
+
+Например:
+
+```toml
+# settings.toml
+[server]
+data = {port=8888}
+```
+
+```toml
+# other.toml
+[server]
+data = {address='server.com'}
+```
+
+С **merge\_enabled** конечный файл `settings.server` будет
+
+```python
+{"port": 8888, "address": "server.com"}
+```
+
+В противном случае будет только то, что указано в последнем загруженном файле. подробнее о [слиянии стратегий](sliyanie-merging.md)
 
 ### **root\_path** <a href="#settings_file-or-settings_files" id="settings_file-or-settings_files"></a>
 
