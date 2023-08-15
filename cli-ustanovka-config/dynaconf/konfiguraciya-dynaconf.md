@@ -434,10 +434,72 @@ default = {
   * Место последнего загруженного файла, если какие-либо файлы уже были загружены
   * CWD
 
-Подробнее читайте в settings\_files.
+Подробнее читайте в [settings\_files](faily-nastroek-dynaconf.md#zagruzka-failov-nastroek).
 
 {% hint style="info" %}
 **cwd** — это место, откуда был вызван интерпретатор Python.
 {% endhint %}
 
+### secrets
+
+* Тип - `str`
+* По умолчанию - `None`
+* env-var - `SECRETS_FOR_DYNACONF`
+
+Эта переменная полезна для CI и Jenkins, обычно устанавливается как переменная среды, указывающая на файл, содержащий загружаемые секреты. Пример:
+
+```bash
+export SECRETS_FOR_DYNACONF=path/to/secrets.yaml
+```
+
 ### **settings\_file** (или **settings\_files**) <a href="#settings_file-or-settings_files" id="settings_file-or-settings_files"></a>
+
+* Тип - `str | list`
+* По умолчанию - `[]`
+* env-var - `SETTINGS_FILE_FOR_DYNACONF` или `SETTINGS_FILES_FOR_DYNACONF`
+
+{% hint style="info" %}
+Эта переменная требуется начиная с версии 3.0.0 (см. [#361](https://github.com/dynaconf/dynaconf/pull/361)).
+{% endhint %}
+
+Путь к файлам, из которых вы хотите, чтобы dynaconf загружал настройки. Это может быть `settings_file` (единственное число) или `settings_files` (множественное).
+
+Это может быть список **list** или строка **str**, разделенные точкой с запятой/запятой:
+
+```python
+settings_files=["file1.toml", "file2.toml"] # список list
+settings_files="file1.toml;file2.toml" # точка с запятой
+settings_files="file1.toml,file2.toml" # запятая
+```
+
+Также это может быть один файл.
+
+```python
+settings_file="settings.toml"
+```
+
+Или указывается как env var.
+
+```bash
+# одиночный
+export SETTINGS_FILE_FOR_DYNACONF="/etc/program/settings.toml"
+
+# множественный
+export SETTINGS_FILES_FOR_DYNACONF="/etc/program/settings.toml;/tmp/foo.yaml"
+```
+
+Подробнее о [settings\_files](faily-nastroek-dynaconf.md)
+
+### skip\_files
+
+* Тип - `list`
+* По умолчанию - `None`
+* env-var - `SKIP_FILES_FOR_DYNACONF`
+
+При использовании glob для **includes** вы можете захотеть, чтобы dynaconf игнорировал некоторые совпадающие файлы.
+
+```python
+skip_files=["path/to/ignored.toml"]
+```
+
+### sysenv\_fallback
