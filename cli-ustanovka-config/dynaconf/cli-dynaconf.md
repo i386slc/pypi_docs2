@@ -228,3 +228,59 @@ dynaconf list -o path/to/file.py --output-flat
 ```
 
 ### dynaconf write
+
+```
+Использование: dynaconf write [OPTIONS] [ini|toml|yaml|json|py|redis|vault|env]
+
+  Writes data to specific source
+
+Параметры:
+  -v, --vars TEXT     ключевые значения, которые должны быть записаны, например:
+                      `dynaconf write toml -e NAME=foo -e X=2`
+
+  -s, --secrets TEXT  значения секретного ключа, которые будут записаны в .secrets
+                      например: `dynaconf write toml -s TOKEN=kdslmflds -s X=2`
+
+  -p, --path TEXT     по умолчанию текущие directory/settings.{ext}
+  -e, --env TEXT      env для записи значений по умолчанию в DEVELOPMENT для файлов
+                      для внешних источников, таких как Redis и Vault, это будет
+                      DYNACONF или значение, установленное в
+                      $ENVVAR_PREFIX_FOR_DYNACONF
+
+  -y
+  --help              Показать это сообщение и выйти.
+```
+
+### dynaconf validate
+
+> НОВОЕ в версии 1.0.1
+
+Начиная с версии 1.0.1 можно определить валидаторы в файле **TOML** с именем `dynaconf_validators.toml`, расположенном в той же папке, что и ваши файлы настроек.
+
+`dynaconf_validators.toml` эквивалентен программе выше
+
+```toml
+[default]
+
+version = {must_exist=true}
+name = {must_exist=true}
+password = {must_exist=false}
+
+  [default.age]
+  must_exist = true
+  lte = 30
+  gte = 10
+
+[production]
+project = {eq="hello_world"}
+```
+
+Затем для запуска проверки используйте:
+
+```bash
+$ dynaconf -i config.settings validate
+```
+
+При проверке он возвращает статус `0 (success)`, и эту команду можно вызывать в заданиях CI/CD/Deploy.
+
+### dynaconf --version
