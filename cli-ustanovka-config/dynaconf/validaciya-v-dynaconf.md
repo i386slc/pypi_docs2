@@ -307,3 +307,136 @@ Validator(
     messages={"must_exist_true": "You forgot to set {name} in your settings."}
 )
 ```
+
+## Предоставление значений по умолчанию или вычисленных значений
+
+Валидаторы можно использовать для предоставления значений по умолчанию или вычисленных значений.
+
+### Значения по умолчанию
+
+```python
+Validator("FOO", default="A default value for foo")
+```
+
+Затем, если невозможно загрузить значения из файлов или среды, для этого ключа будет установлено значение по умолчанию.
+
+{% hint style="warning" %}
+**YAML** считывает пустые ключи как **None**, и в этом случае значения по умолчанию не применяются. Если вы хотите изменить их, установите `apply_default_on_none=True` либо глобально для класса **Dynaconf**, либо индивидуально для валидатора **Validator**.
+{% endhint %}
+
+### Вычисленные значения
+
+Иногда вам нужно вычислить некоторые значения путем вызова функций, просто передайте вызываемый объект в качестве аргумента по умолчанию.
+
+```python
+Validator("FOO", default=my_function)
+```
+
+затем
+
+```python
+def my_function(settings, validator):
+    return "this is computed during validation time"
+```
+
+Если вы хотите, чтобы оценивалось лениво, **my\_function** необходимо переопределить как
+
+```python
+def my_lazy_function(value, **context):
+    """
+    value: Значение по умолчанию, передаваемое валидатору, по умолчанию равно `empty`
+    context: Словарь, содержащий
+            env: Все переменные среды
+            this: Экземпляр настроек
+    """
+    return "When the first value is accessed, then the my_lazy_function will be called"
+```
+
+Впоследствии
+
+```python
+from dynaconf.utils.functional import empty
+from dynaconf.utils.parse_conf import Lazy
+
+Validator("FOO", default=Lazy(empty, formatter=my_lazy_function))
+```
+
+Вы также можете использовать пути, разделенные точками, для регистрации валидаторов во вложенных структурах:
+
+```python
+# Регистрация валидаторов
+settings.validators.register(
+
+    # Убедитесь, что поле database.host существует.
+    Validator('DATABASE.HOST', must_exist=True),
+
+    # Сделайте поле database.password необязательным. Это поведение по умолчанию.
+    Validator('DATABASE.PASSWORD', must_exist=None),
+)
+
+# Запустите валидатор
+settings.validators.validate()
+```
+
+### Приведение/Трансформация
+
+Валидаторы можно использовать для приведения значений к определенному типу, аргумент **cast** ожидает класс/тип или вызываемый объект.
+
+учитывая эти `settings.toml`
+
+```toml
+name = 'Bruno'
+colors = ['red', 'green', 'blue']
+```
+
+Валидаторам можно передать атрибут **cast**
+
+```python
+settings = Dynaconf(
+    validators=[
+        # Здесь важен порядок
+        Validator("name", len_eq=5),
+        Validator("name", len_min=1),
+        Validator("name", len_max=5),
+        # Это приведет к отображению строки в списке
+        Validator("name", cast=list),
+        # С этого момента `name` конвейера проверки будет представлять
+        # собой список символов, и это повлияет на settings.NAME
+
+        Validator("colors", len_eq=3),
+        Validator("colors", len_eq=3),
+        # это приведет к преобразованию списка в строку
+        Validator("colors", len_eq=24, cast=str),
+        # С этого момента `colors` конвейера проверки будут представлять собой
+        # строку из 24 символов, и это повлияет на settings.COLORS.
+
+    ],
+)
+```
+
+```python
+assert settings.name == ['B', 'r', 'u', 'n', 'o']
+assert type(settings.name ) == list
+assert settings.colors == '["red", "green", "blue"]'
+assert type(settings.colors) == str
+```
+
+### Вызываемые условия
+
+Аргумент **condition** ожидает вызываемый объект, который получает значение и возвращает логическое значение. Если условие не выполнено, будет выдано сообщение **ValidationError**.
+
+Чтобы пройти проверку, функция условия должна вернуть `True` (или истинный тип), если возвращаемое значение имеет значение `False` (или ложный тип), тогда условие не выполняется.
+
+Вызываемое условие получает в качестве параметра только одно значение.
+
+Пример:
+
+```python
+Validator("VERSION", condition=lambda v: v.startswith("1."))
+
+
+def user_must_be_chuck_norris(value):
+    return value == "Chuck Norris"
+
+Validator("USER", condition=user_must_be_chuck_norris)
+```
