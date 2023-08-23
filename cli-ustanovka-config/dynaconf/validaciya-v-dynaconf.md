@@ -485,3 +485,53 @@ Validator('DATABASE.USER', must_exist=True) | Validator('DATABASE.KEY', must_exi
 ```python
 Validator('DATABASE.HOST', must_exist=True) & Validator('DATABASE.CONN', must_exist=True)
 ```
+
+## CLI и dynaconf\_validators.toml
+
+Валидаторы можно определить в файле **TOML** с именем `dynaconf_validators.toml`, который находится в той же папке, что и ваши файлы настроек.
+
+`dynaconf_validators.toml` эквивалентен приведенной ниже программе:
+
+```toml
+[default]
+
+version = {must_exist=true}
+name = {must_exist=true}
+password = {must_exist=false}
+
+# также поддерживается точечная запись
+'a_big_dict.nested_1.nested_2.nested_3.nested_4' = {must_exist=true, eq=1}
+
+  [default.age]
+  must_exist = true
+  lte = 30
+  gte = 10
+
+[production]
+project = {eq="hello_world"}
+```
+
+Затем для запуска проверки используйте:
+
+```bash
+$ dynaconf validate
+```
+
+Это возвращает код 0 (success), если проверка прошла успешно.
+
+{% hint style="info" %}
+Все значения в dynaconf анализируются с использованием формата toml, TOML пытается быть умным и определить тип переменных настроек, некоторые переменные будут автоматически преобразованы в целые числа:
+
+```toml
+FOO = "0x..."  # hexadecimal
+FOO = "0o..."  # Octal
+FOO = "0b..."  # Binary
+```
+
+Все случаи соответствуют спецификациям **toml** [https://github.com/toml-lang/toml/blob/master/toml.abnf](https://github.com/toml-lang/toml/blob/master/toml.abnf).
+
+Если вам нужно принудительно выполнить приведение определенного типа, есть 2 варианта.
+
+* Используйте двойные кавычки для строк, например: `FOO = "'0x...'"` будет строкой.
+* Укажите тип, используя **@** пример: `FOO = "@str 0x..."` (доступные конвертеры: **@int**, **@float**, **@bool**, **@json**)
+{% endhint %}
