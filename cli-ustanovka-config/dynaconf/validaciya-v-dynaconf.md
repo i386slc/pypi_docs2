@@ -440,3 +440,48 @@ def user_must_be_chuck_norris(value):
 
 Validator("USER", condition=user_must_be_chuck_norris)
 ```
+
+### Условные валидаторы
+
+В некоторых случаях вам может потребоваться выполнить проверку только после прохождения другого валидатора, например:
+
+> Убедитесь, что DATABASE.HOST установлен только тогда, когда установлен DATABASE.USER.
+
+Чтобы проверить этот случай, можно передать параметр **when**:
+
+```python
+Validator(
+    "DATABASE.HOST", 
+    must_exist=True, 
+    when=Validator("DATABASE.USER", must_exist=True)
+)
+```
+
+Другой пример:
+
+> Проверяет, что DATABASE.CONNECTION\_ARGS установлен только в том случае, если DATABASE.URI начинается с "sqlite://"
+
+```python
+Validator(
+    "DATABASE.CONNECTION_ARGS", 
+    must_exist=True, 
+    when=Validator("DATABASE.URI", condition=lambda v: v.startswith("sqlite://")),
+    messages={"must_exist_true": "{name} is required when DATABASE is SQLite"}
+)
+```
+
+### Объединение валидаторов
+
+Валидаторы можно комбинировать, используя:
+
+#### Оператор ИЛИ `|`
+
+```python
+Validator('DATABASE.USER', must_exist=True) | Validator('DATABASE.KEY', must_exist=True)
+```
+
+#### Оператор И `&`
+
+```python
+Validator('DATABASE.HOST', must_exist=True) & Validator('DATABASE.CONN', must_exist=True)
+```
