@@ -128,3 +128,182 @@ settings.update({"NEW_VALUE": 123})
 ## Параметры валидатора
 
 Валидаторы могут быть созданы путем передачи следующих аргументов:
+
+```python
+# названия: list[str]
+# может быть одной или несколькими позиционными строками 
+Validator('VERSION', 'AGE', 'NAME'),
+# также можно использовать точечную запись
+Validator('DATABASE.HOST', 'DATABASE.PORT'),
+Validator('DATABASE.HOST', 'DATABASE.PORT'),
+
+
+# must_exist: bool (alias: required)
+# Проверьте, должна ли переменная существовать или нет 
+Validator('VERSION', must_exist=True), 
+Validator('PASSWORD', must_exist=False),
+# существует псевдоним для must_exist под названием `required`
+Validator('VERSION', required=True), 
+
+# condition: callable 
+# Функция или любой другой вызываемый объект, который принимает значение `value`
+# и должен возвращать логическое значение. 
+Validator('VERSION', condition=lambda v: v.startswith("1.")),
+
+# when: Validator
+# Условно запускает валидатор только при прохождении переданного валидатора
+Validator(
+    'VERSION',
+    condition=lambda v: v.endswith("-dev"),
+    when=Validator('ENV_FOR_DYNACONF', eq='development')
+),
+
+# env: str 
+# Запускает валидатор для указанного окружения только для настроек,
+# загружаемых из файлов с environments=True 
+Validator('VERSION', must_exist=True, env='production'),
+
+# messages: dict[str, str]
+# Словарь с настраиваемыми сообщениями для каждого типа проверки. 
+Validator(
+    "VERSION", 
+    must_exist=True,
+    condition=lambda v: v.startswith("1."),
+    messages={
+        "must_exist_true": "You forgot to set {name} in your settings.",
+        "condition": "The allowed version must start with 1., you passed {value}"
+    }
+),
+
+# cast: callable/class 
+# Тип или вызываемый объект для преобразования типа переданного объекта
+# также можно использовать для применения преобразований/нормализации.
+Validator("VERSION", cast=str),
+Validator("VERSION", cast=lambda v: v.replace("1.", "2.")),
+Validator("STATIC_FOLDER", cast=Path)
+# Приведение будет вызываться для значений по умолчанию, а также для значений,
+# определенных в настройках через файлы или envvars.
+
+# default: any value or a callable 
+# Если значение не найдено, ему будет установлено значение по умолчанию. 
+# Если по умолчанию используется вызываемый объект, он будет вызываться
+# с настройками и экземпляром валидатора в качестве аргументов.
+def default_connection_args(settings, validator):
+    if settings.DATABASE.uri.startswith("sqlite://"):
+        return {"echo": True}
+    else:
+        return {}
+
+Validator("DATABASE.CONNECTION_ARGS", default=default_connection_args), 
+# default будет вызываться только в том случае, если значение не установлено явно
+# в настройках через файлы или переменные окружения.
+
+# description: str
+# Начиная с версии 3.1.12, dynaconf ни для чего не использует это,
+# но существуют плагины и внешние инструменты, которые его используют.
+# Это значение для создания документации 
+Validator("VERSION", description="The version of the app"),
+
+# apply_default_on_none: bool 
+# Синтаксический анализатор YAML анализирует пустые значения как `None`,
+# поэтому в этом случае вы можете принудительно применить значение по умолчанию,
+# когда в настройках установлено значение `None`.
+Validator("VERSION", default="1.0.0", apply_default_on_none=True),
+
+
+# Operations: comparison operations 
+# - eq: value == other
+# - ne: value != other
+# - gt: value > other
+# - lt: value < other
+# - gte: value >= other
+# - lte: value <= other
+# - is_type_of: isinstance(value, type)
+# - is_in:  value in sequence
+# - is_not_in: value not in sequence
+# - identity: value is other
+# - cont: contain value in
+# - len_eq: len(value) == other
+# - len_ne: len(value) != other
+# - len_min: len(value) > other
+# - len_max: len(value) < other
+# - startswith: value.startswith(other) 
+# - endswith: value.endswith(other)
+# Примеры:
+Validator("VERSION", eq="1.0.0"),
+Validator("VERSION", ne="1.0.0"),
+Validator("AGE", gt=18),
+Validator("AGE", lt=18),
+Validator("AGE", gte=18),
+Validator("AGE", lte=18),
+Validator("AGE", is_type_of=int),
+Validator("AGE", is_in=[18, 19, 20]),
+Validator("AGE", is_not_in=[18, 19, 20]),
+Validator("THING", identity=thing),  # settings.THING is thing
+Validator("THING", cont="hello"),  # "hello" in settings.THING
+Validator("THING", len_eq=3),  # len(settings.THING) == 3
+Validator("THING", len_ne=3),  # len(settings.THING) != 3
+Validator("THING", len_min=3),  # len(settings.THING) > 3
+Validator("THING", len_max=3),  # len(settings.THING) < 3
+Validator("THING", startswith="hello"),  # settings.THING.startswith("hello")
+Validator("THING", endswith="world"),  # settings.THING.endswith("world")
+```
+
+## Комплексные валидаторы
+
+Один валидатор может иметь несколько условий.
+
+```python
+Validator(
+  "NAME",
+  ne="john",
+  len_min=4,
+  must_exist=True, # излишне, но разрешено 
+  startswith="user_",
+  cast=str,
+  condition=lambda v: v not in FORBIDEN_USERS,
+  ...
+)
+```
+
+Но также может быть выражено в отдельных валидаторах, обратите внимание, что порядок имеет значение, поскольку валидаторы оцениваются в заданном порядке.
+
+```python
+validators = [
+  Validator("NAME", ne="john"),
+  Validator("NAME", len_min=4),
+  Validator("NAME", must_exist=True),
+  Validator("NAME", startswith="user_"),
+]
+```
+
+## Пользовательские сообщения проверки
+
+Сообщения можно настроить, передав аргумент **messages** конструктору **Validator**.
+
+Аргументу **messages** должен быть передан словарь с одним из допустимых ключей:
+
+Сообщения по умолчанию:
+
+```python
+{
+    "must_exist_true": "{name} is required in env {env}",
+    "must_exist_false": "{name} cannot exists in env {env}",
+    "condition": "{name} invalid for {function}({value}) in env {env}",
+    "operations": (
+        "{name} must {operation} {op_value} "
+        "but it is {value} in env {env}"
+    ),
+    "combined": "combined validators failed {errors}",
+}
+```
+
+Пример:
+
+```python
+Validator(
+    "VERSION",
+    must_exist=True,
+    messages={"must_exist_true": "You forgot to set {name} in your settings."}
+)
+```
