@@ -118,3 +118,26 @@ export FLASK_EXTENSIONS="['flask_admin:Admin']"
 ## Расширения разработки
 
 Также возможно иметь расширения, которые загружаются только для среды разработки.
+
+```toml
+[default]
+EXTENSIONS = [
+  "flask_admin:Admin",
+  "flask_bootstrap:Bootstrap",
+  "custom_extension.module:init_app"
+]
+
+[development]
+EXTENSIONS = [
+  "dynaconf_merge",
+  "flask_debugtoolbar:DebugToolbar"
+]
+```
+
+## Исправление проблем
+
+Если вы обнаружите проблему, связанную с тем, что Flask не может загружать переменные из файла `.env` или невозможно импортировать приложение или **create\_app**, отключите поддержку flask для **dotenv**.
+
+```bash
+export FLASK_SKIP_DOTENV=1
+```
