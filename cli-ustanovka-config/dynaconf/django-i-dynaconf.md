@@ -118,3 +118,87 @@ DATABASES = {
 {% hint style="info" %}
 Чтобы использовать `$ dynaconf` CLI, необходимо определить переменную среды **DJANGO\_SETTINGS\_MODULE**.
 {% endhint %}
+
+## Индивидуальные настройки
+
+### Загрузка настроек
+
+Вы можете настроить способ загрузки настроек вашего проекта django.
+
+Пример: вы хотите, чтобы ваши пользователи настроили файл настроек, определенный в `export PROJECTNAME_SETTINGS=/path/to/settings.toml`, и вы хотите, чтобы переменные среды загружались из **PROJECTNAME\_VARNAME**.
+
+Для этого отредактируйте файл django `settings.py` и измените часть расширения dynaconf:
+
+от:
+
+```python
+# HERE STARTS DYNACONF EXTENSION LOAD
+...
+settings = dynaconf.DjangoDynaconf(__name__)
+# HERE ENDS DYNACONF EXTENSION LOAD
+```
+
+к такому виду:
+
+```python
+# HERE STARTS DYNACONF EXTENSION LOAD
+...
+settings = dynaconf.DjangoDynaconf(
+    __name__,
+    ENVVAR_PREFIX_FOR_DYNACONF='PROJECTNAME',
+    ENV_SWITCHER_FOR_DYNACONF='PROJECTNAME_ENV',
+    SETTINGS_FILE_FOR_DYNACONF='/etc/projectname/settings.toml',
+    ENVVAR_FOR_DYNACONF='PROJECTNAME_SETTINGS',
+    INCLUDES_FOR_DYNACONF=['/etc/projectname/plugins/*'],
+)
+# HERE ENDS DYNACONF EXTENSION LOAD
+```
+
+Переменные в среде можно установить/переопределить с помощью префикса **PROJECTNAME\_**, например: `export PROJECTNAME_DEBUG=true`.
+
+Рабочую среду теперь можно переключать с помощью команды `export PROJECTNAME_ENV=production`, которая по умолчанию используется для разработки **development**.
+
+Ваши настройки теперь считываются из `/etc/projectname/settings.toml` (dynaconf не будет выполнять поиск всех форматов настроек). Местоположение этих настроек можно изменить с помощью envvar, используя экспорт `PROJECTNAME_SETTINGS=/other/path/to/settings.py{yaml,toml,json,ini}`
+
+Дополнительные настройки можно прочитать из `/etc/projectname/plugins/*`. Любой поддерживаемый файл из этой папки будет загружен.
+
+Вы можете установить дополнительные параметры, посмотрите [конфигурацию](konfiguraciya-dynaconf.md).
+
+### Используйте функции Django внутри пользовательских настроек
+
+Если вам нужно использовать функции django в настройках, вы можете зарегистрировать собственные конвертеры с помощью утилиты **add\_converters**.
+
+При определении их в `settings.py` есть некоторые функции django, которые нельзя импортировать непосредственно в область действия модуля. По этой причине вы можете добавить их в [хук](rasshirennoe-ispolzovanie-dynaconf.md#khuki), который выполняется после загрузки.
+
+Например, если вам нужно использовать **reverse\_lazy**, вы можете сделать это:
+
+```python
+# myprj/settings.py
+
+import dynaconf
+
+def converters_setup():
+    from django.urls import reverse_lazy  # noqa
+
+    dynaconf.add_converter("reverse_lazy", reverse_lazy)
+
+settings = dynaconf.DjangoDynaconf(__name__, post_hooks=converters_setup)
+
+# HERE ENDS DYNACONF EXTENSION LOAD (No more code below this line)
+```
+
+И тогда будет работать следующий код:
+
+```yaml
+# settings.yaml
+
+default:
+    ADMIN_NAMESPACE: admin
+    LOGIN_URL: "@reverse_lazy @format {this.ADMIN_NAMESPACE}:login"
+```
+
+{% hint style="info" %}
+Некоторые распространенные конвертеры могут быть добавлены в Dynaconf в будущих выпусках. См. [#865](https://github.com/dynaconf/dynaconf/issues/865).
+
+Информацию о **gettext** см. в [#648](https://github.com/dynaconf/dynaconf/issues/648).
+{% endhint %}
