@@ -202,3 +202,155 @@ default:
 
 Информацию о **gettext** см. в [#648](https://github.com/dynaconf/dynaconf/issues/648).
 {% endhint %}
+
+## Чтение настроек автономных скриптов
+
+Рекомендуемый способ создания автономных сценариев — создание команд управления `management commands` внутри приложений или плагинов Django.
+
+В приведенных ниже примерах предполагается, что у вас установлена переменная среды **DJANGO\_SETTINGS\_MODULE**, либо экспортировав ее в свою среду, либо явно добавив ее в словарь `os.environ`.
+
+{% hint style="success" %}
+Если вам нужно, чтобы скрипт был доступен вне области вашего приложения Django, предпочитайте использовать `settings.DYNACONF.configure()` вместо обычного `settings.configure()`, предоставляемого Django. Последнее приведет к отключению dynaconf.
+
+В конце концов, вам, вероятно, не нужно его вызывать, поскольку у вас экспортирован **DJANGO\_SETTINGS\_MODULE**.
+{% endhint %}
+
+### Общий случай
+
+```python
+# /etc/my_script.py
+
+from django.conf import settings
+print(settings.DATABASES)
+```
+
+### Явное добавление модуля настройки
+
+```python
+# /etc/my_script.py
+
+import os
+os.environ['DJANGO_SETTINGS_MODULE'] = 'foo.settings'
+
+from django.conf import settings
+print(settings.DATABASES)
+```
+
+### Когда вам нужна настройка
+
+Вызов `DYNACONF.configure()` необходим, когда вы хотите получить доступ к специальным методам dynaconf, таким как **using\_env**, **get**, **get\_fresh** и т. д.
+
+```python
+# /etc/my_script.py
+
+from django.conf import settings
+settings.DYNACONF.configure()
+print(settings.get('DATABASES'))
+```
+
+### Импорт настроек напрямую
+
+Это рекомендуется для вышеуказанного случая.
+
+```python
+# /etc/my_script.py
+
+from foo.settings import settings
+print(settings.get('DATABASES'))
+```
+
+### Импорт настроек через importlib
+
+```python
+# /etc/my_script.py
+
+import os
+import importlib
+settings = importlib.import_module(os.environ['DJANGO_SETTINGS_MODULE'])
+print(settings.get('DATABASES'))
+```
+
+## Тестирование на Django
+
+Тестирование Django должно работать «из коробки»!
+
+## Фиктивные envvars с помощью Django
+
+Но в некоторых случаях, когда вы имитируете что-то и вам нужно добавить переменные среды в `os.environ` по требованию для тестовых случаев, может потребоваться перезагрузка **reload** dynaconf.
+
+Для этого напишите часть настройки вашего тестового примера:
+
+```python
+import os
+import importlib
+from myapp import settings # ПРИМЕЧАНИЕ. Здесь используется модуль вашего приложения,
+                           # а не django.conf.
+
+class TestCase(...):
+    def setUp(self):
+        os.environ['DJANGO_FOO'] = 'BAR'  # dynaconf должен прочитать его
+                                          # и установить `settings.FOO`
+        importlib.reload(settings)
+
+    def test_foo(self):
+        self.assertEqual(settings.FOO, 'BAR')
+```
+
+## Использование pytest и django
+
+Установите `pip install pytest-django`
+
+Добавьте в свой `conftest.py`
+
+`project/tests/conftest.py`
+
+```python
+import pytest
+
+@pytest.fixture(scope="session", autouse=True)
+def set_test_settings():
+    # https://github.com/dynaconf/dynaconf/issues/491#issuecomment-745391955
+    from django.conf import settings
+    settings.setenv('testing')  # заставить окружающую среду быть такой, какой вы хотите
+```
+
+## Явный режим
+
+Некоторые пользователи предпочитают явно загружать каждую переменную настройки в файл `settings.py`, а затем позволять django управлять ею обычным способом. Это возможно, но имейте в виду, что это предотвратит использование методов dynaconf, таких как **using\_env**, **get**.
+
+Dynaconf будет доступен только в области `settings.py`. В остальной части вашего приложения настройками Django управляет обычным образом.
+
+```python
+# settings.py
+
+import sys
+from dynaconf import LazySettings
+
+settings = LazySettings(**YOUR_OPTIONS_HERE)
+
+DEBUG = settings.get('DEBUG', False)
+DATABASES = settings.get('DATABASES', {
+    'default': {
+        'ENGINE': '...',
+        'NAME': '...
+    }
+})
+...
+
+# В конце вашего settings.py
+settings.populate_obj(sys.modules[__name__], ignore=locals())
+```
+
+Вы по-прежнему можете изменить окружение с помощью команды `export DJANGO_ENV=production,` а также экспортировать переменные, например, `export DJANGO_DEBUG=true`.
+
+{% hint style="info" %}
+Начиная с версии `2.1.1`, аргумент **ignore** указывает Dynaconf не переопределять переменные, которые уже существуют в текущем файле настроек; удалите его, если вы хотите, чтобы все существующие локальные переменные были перезаписаны dynaconf.
+{% endhint %}
+
+## Известные предостережения
+
+* Если `settings.configure()` вызвать напрямую, Dynaconf отключается; используйте `settings.DYNACONF.configure()`.
+
+## Примечание об устаревании
+
+В старых версиях dynaconf решением было добавить `dynaconf.contrib.django_dynaconf` в **INSTALLED\_APPS** в качестве первого элемента. Это все еще работает, но имеет некоторые ограничения, поэтому больше не рекомендуется.
