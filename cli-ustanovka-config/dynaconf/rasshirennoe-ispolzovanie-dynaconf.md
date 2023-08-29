@@ -275,4 +275,131 @@ if __name__ == "__main__":
     app()
 ```
 
+## Программная загрузка файла настроек
+
+Вы можете загружать файлы из скрипта Python.
+
+При использовании относительных путей в качестве базового пути будет использоваться **root\_path**. Узнайте больше о том, как работает резервный вариант **root\_path**, [здесь](konfiguraciya-dynaconf.md#settings\_file-or-settings\_files).
+
+```python
+from dynaconf import Dynaconf
+
+settings = Dynaconf()
+
+# единственный файл
+settings.load_file(path="/path/to/file.toml")
+
+# список
+settings.load_file(path=["/path/to/file.toml", "/path/to/another-file.toml"])
+
+# разделены по ; или ,
+settings.load_file(path="/path/to/file.toml;/path/to/another-file.toml")
+```
+
+Обратите внимание, что данные, загруженные этим методом, не сохраняются.
+
+Как только **env** будет изменен с помощью вызова `setenv|using_env`, `reload` или `configure`, загруженные данные будут очищены. Чтобы сохранить это, рассмотрите возможность использования переменной **INCLUDES\_FOR\_DYNACONF** или убедитесь, что она будет загружена программно снова.
+
+## Фильтрация префиксов
+
+```toml
+[production]
+PREFIX_VAR = TEST
+OTHER = FOO
+```
+
+```python
+from dynaconf import Dynaconf
+from dynaconf.strategies.filtering import PrefixFilter
+
+settings = Dynaconf(
+    settings_file="settings.toml",
+    environments=False,
+    filter_strategy=PrefixFilter("prefix")
+)
+```
+
+Загружает только переменные с префиксом **prefix\_**
+
 ## Создание новых загрузчиков
+
+В вашем проекте, т.е. под названием **myprogram**, создайте свой собственный загрузчик.
+
+#### `myprogram/my_custom_loader.py`
+
+```python
+def load(obj, env=None, silent=True, key=None, filename=None):
+    """
+    Считывает и загружает в "obj" один ключ или все ключи из источника.
+    :param obj: экземпляр настроек
+    :param env: настройки текущего окружения (заглавные буквы) default='DEVELOPMENT'
+    :param silent: если ошибки нужно их поднять
+    :param key: если определена загрузка одного ключа, иначе загружайте все из `env`
+    :param filename: Пользовательское имя файла для загрузки (полезно для тестов)
+    :return: None
+    """
+    # Загрузите данные из вашего пользовательского источника данных
+    # (файл, база данных, память и т. д.)
+    # используйте `obj.set(key, value)` или `obj.update(dict)` чтобы загрузить данные
+    # используйте `obj.find_file('filename.ext')` чтобы найти файл в дереве поиска
+    # Ничего не возвращает
+```
+
+В файле `.env` или при экспорте envvar определите:
+
+```bash
+LOADERS_FOR_DYNACONF=['myprogram.my_custom_loader', 'dynaconf.loaders.env_loader']
+```
+
+Dynaconf импортирует ваш файл `myprogram.my_custom_loader.load` и вызовет его.
+
+{% hint style="info" %}
+**ВАЖНО**: `"dynaconf.loaders.env_loader"` должен быть последним в списке загрузчиков, если вы хотите сохранить поведение envvars для переопределения параметров.
+{% endhint %}
+
+В случае, если вам необходимо отключить все внешние загрузчики и полагаться только на `settings.*` загрузчики файлов определяют:
+
+```python
+LOADERS_FOR_DYNACONF=false
+```
+
+Если вам нужно отключить все основные загрузчики и полагаться только на внешние загрузчики:
+
+```toml
+CORE_LOADERS_FOR_DYNACONF='[]'  # пустой список TOML
+```
+
+Например, если вы хотите добавить загрузчик [SOPS](https://github.com/mozilla/sops)
+
+```python
+def load(
+    obj: LazySettings,
+    env: str = "DEVELOPMENT",
+    silent: bool = True,
+    key: str = None,
+    filename: str = None,
+) -> None:
+    sops_filename = f"secrets.{env}.yaml"
+    sops_file = obj.find_file(sops_filename)
+    if not sops_file:
+        logger.error(f"{sops_filename} not found! Secrets not loaded!")
+        return
+
+    _output = run(["sops", "-d", sops_file], capture_output=True)
+    if _output.stderr:
+        logger.warning(f"SOPS error: {_output.stderr}")
+    decrypted_config = yaml.load(_output.stdout, Loader=yaml.CLoader)
+
+    # поддержка при анализе данных inspect
+    source_metadata = SourceMetadata('sops', sops_file, env)
+
+    if key:
+        value = decrypted_config.get(key.lower())
+        obj.set(key, value, loader_identifier=source_metadata)
+    else:
+        obj.update(decrypted_config, loader_identifier=source_metadata)
+
+    obj._loaded_files.append(sops_file)
+```
+
+Посмотреть больше [test\_functional/custom\_loader](https://github.com/dynaconf/dynaconf/tree/master/tests\_functional/custom\_loader)
