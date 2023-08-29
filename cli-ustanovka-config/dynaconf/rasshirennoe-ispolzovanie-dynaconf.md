@@ -403,3 +403,142 @@ def load(
 ```
 
 Посмотреть больше [test\_functional/custom\_loader](https://github.com/dynaconf/dynaconf/tree/master/tests\_functional/custom\_loader)
+
+## Подражание модулю
+
+В некоторых случаях вам может потребоваться выдать себя за устаревший модуль настроек **settings**, например, у вас уже есть программа, которая это делает.
+
+```python
+from myprogram import settings
+```
+
+и теперь вы хотите использовать dynaconf без необходимости менять всю кодовую базу.
+
+Перейдите в `myprogram/settings.py` и примените подражание модулю.
+
+```python
+import sys
+from dynaconf import LazySettings
+
+sys.modules[__name__] = LazySettings()
+```
+
+последняя строка приведенного выше кода заставит модуль заменить себя экземпляром dynaconf при первом импорте.
+
+## Переключение рабочей среды
+
+Вы можете переключаться между существующими средами, используя:
+
+* **from\_env**: (_**рекомендуется**_) Создаст новый экземпляр настроек, указывающий на определенный **env**.
+* **setenv**: установит для существующего экземпляра определенный **env**.
+* **using\_env**: Менеджер контекста, который будет определять **env** только внутри своей области действия.
+
+### from\_env
+
+> Новое в версии 2.1.0
+
+Вернуть новый изолированный объект настроек, указывающий на уточненный **env**.
+
+Пример `settings.toml`:
+
+```toml
+[development]
+message = 'This is in dev'
+foo = 1
+[other]
+message = 'this is in other env'
+bar = 2
+```
+
+Программа:
+
+```python
+>>> from dynaconf import settings
+>>> print(settings.MESSAGE)
+'This is in dev'
+>>> print(settings.FOO)
+1
+>>> print(settings.BAR)
+AttributeError: settings object has no attribute 'BAR'
+```
+
+Затем вы можете использовать **from\_env**:
+
+```python
+>>> print(settings.from_env('other').MESSAGE)
+'This is in other env'
+>>> print(settings.from_env('other').BAR)
+2
+>>> print(settings.from_env('other').FOO)
+AttributeError: settings object has no attribute 'FOO'
+```
+
+Существующий объект настроек **settings** остается прежним.
+
+```python
+>>> print(settings.MESSAGE)
+'This is in dev'
+```
+
+Вы можете назначать новые объекты настроек различным окружениям, например:
+
+```python
+development_settings = settings.from_env('development')
+other_settings = settings.from_env('other')
+```
+
+И вы можете выбрать, будут ли переменные из разных окружений объединяться и переопределяться последовательно:
+
+```python
+all_settings = settings.from_env('development', keep=True).from_env('other', keep=True)
+
+>>> print(all_settings.MESSAGE)
+'This is in other env'
+>>> print(all_settings.FOO)
+1
+>>> print(all_settings.BAR)
+2
+```
+
+Переменные из `[development]` загружаются с сохранением предварительно загруженных значений, затем загружаются переменные из `[other]` с сохранением предварительно загруженных из `[development]` и переопределением их.
+
+Также можно передать дополнительные переменные [конфигурации](konfiguraciya-dynaconf.md) в метод **from\_env**.
+
+```python
+new_settings = settings.from_env(
+    'production', keep=True, SETTINGS_FILE_FOR_DYNACONF='another_file_path.yaml'
+)
+```
+
+Затем **new\_settings** унаследует все переменные из существующей среды **env**, а также загрузит производственную среду `another_file_path.yaml`.
+
+### setenv
+
+Изменяет **in\_place** окружение существующего объекта.
+
+```python
+from dynaconf import settings
+
+settings.setenv('other')
+# теперь значения берутся из раздела [other] конфигурации
+assert settings.MESSAGE == 'This is in other env'
+
+settings.setenv()
+# теперь рабочая среда вернулась к предыдущей
+```
+
+### using\_env
+
+Использование контекстного менеджера
+
+```python
+from dynaconf import settings
+
+with settings.using_env('other'):
+    # теперь значения берутся из раздела [other] конфигурации
+    assert settings.MESSAGE == 'This is in other env'
+
+# существующие настройки возвращаются в нормальное состояние
+# после области действия контекстного менеджера
+assert settings.MESSAGE == 'This is in dev'
+```
