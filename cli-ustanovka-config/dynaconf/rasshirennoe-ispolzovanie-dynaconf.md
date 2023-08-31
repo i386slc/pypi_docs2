@@ -542,3 +542,243 @@ with settings.using_env('other'):
 # после области действия контекстного менеджера
 assert settings.MESSAGE == 'This is in dev'
 ```
+
+## Наполнение объектов
+
+> Новое в версии 2.0.0
+
+Вы можете использовать значения dynaconf для заполнения объектов (экземпляров) Python.
+
+пример:
+
+```python
+class Obj:
+   ...
+```
+
+затем вы можете сделать:
+
+```python
+# предположим, что это имеет DEBUG=True и VALUE=42.1
+from dynaconf import settings
+obj = Obj()
+
+settings.populate_obj(obj)
+
+assert obj.DEBUG is True
+assert obj.VALUE == 42.1
+```
+
+Также вы можете указать только некоторые ключи:
+
+<pre class="language-python"><code class="lang-python"># предположим, что это имеет DEBUG=True и VALUE=42.1
+<strong>from dynaconf import settings
+</strong>obj = Obj()
+
+settings.populate_obj(obj, keys=['DEBUG'])
+
+assert obj.DEBUG is True  # ok
+
+assert obj.VALUE == 42.1  # AttributeError
+</code></pre>
+
+## Экспорт
+
+Вы можете создать файл с текущими конфигурациями, вызвав `dynaconf list -o /path/to/file.ext`, подробнее см. в [CLI](cli-dynaconf.md).
+
+Вы также можете сделать это программно с помощью:
+
+```python
+from dynaconf import loaders
+from dynaconf import settings
+from dynaconf.utils.boxing import DynaBox
+
+# генерирует словарь со всеми ключами для среды разработки `development`
+data = settings.as_dict(env='development')
+
+# записывает в файл, формат которого определяется расширением
+# он может быть .yaml, .toml, .ini, .json, .py
+loaders.write(
+    '/path/to/file.yaml', DynaBox(data).to_dict(), merge=False,
+    env='development'
+)
+```
+
+## Предварительная загрузка файлов
+
+> Новое в версии 2.2.0
+
+Полезно для приложений на основе плагинов.
+
+```python
+from dynaconf import Dynaconf
+
+settings = Dynaconf(
+  # <-- Загружается первым
+  preload=["/path/*", "other/settings.toml"],
+  # <-- Загружается вторым (основной файл)
+  settings_file="/etc/foo/settings.py",
+  # <-- Загружается в конце
+  includes=["other.module.settings", "other/settings.yaml"]
+)
+```
+
+## Тестирование
+
+Для тестирования рекомендуется просто переключиться на среду тестирования и прочитать те же файлы конфигурации.
+
+#### `settings.toml`
+
+```toml
+[default]
+value = "On Default"
+
+[testing]
+value = "On Testing"
+```
+
+#### `program.py`
+
+```python
+from dynaconf import settings
+
+print(settings.VALUE)
+```
+
+```bash
+ENV_FOR_DYNACONF=testing python program.py
+```
+
+Затем ваш `program.py` напечатает красный цвет `"On Testing"` из среды `[testing]`.
+
+### Pytest
+
+Для **pytest** обычно создаются фикстуры для предоставления предварительно настроенного объекта настроек или для настройки параметров до того, как будут собраны все тесты.
+
+Примеры доступны на [https://github.com/dynaconf/dynaconf/tree/master/tests\_functional/pytest\_example](https://github.com/dynaconf/dynaconf/tree/master/tests\_functional/pytest\_example).
+
+С фикстурами **pytest** рекомендуется использовать **FORCE\_ENV\_FOR\_DYNACONF** вместо просто **ENV\_FOR\_DYNACONF**, поскольку он имеет приоритет.
+
+#### Настройте Dynaconf с помощью Pytest
+
+Определите свой **root\_path**
+
+```python
+import os
+
+from dynaconf import Dynaconf
+
+current_directory = os.path.dirname(os.path.realpath(__file__))
+
+settings = Dynaconf(
+    root_path=current_directory, # определение root_path
+    envvar_prefix="DYNACONF",
+    settings_files=["settings.toml", ".secrets.toml"],
+)
+```
+
+#### Программа на Python
+
+`settings.toml` со средой `[testing]`.
+
+```toml
+[default]
+VALUE = "On Default"
+
+[testing]
+VALUE = "On Testing"
+```
+
+`app.py`, который считывает это значение из текущей среды.
+
+```python
+from dynaconf import settings
+
+
+def return_a_value():
+    return settings.VALUE
+```
+
+`tests/conftest.py` с фикстурами для принудительного запуска настроек, указывающих на среду `[testing]`.
+
+```python
+import pytest
+from dynaconf import settings
+
+
+@pytest.fixture(scope="session", autouse=True)
+def set_test_settings():
+    settings.configure(FORCE_ENV_FOR_DYNACONF="testing")
+```
+
+`tests/test_dynaconf.py`, чтобы убедиться, что загружена правильная среда.
+
+```python
+from app import return_a_value
+
+
+def test_dynaconf_is_in_testing_env():
+    assert return_a_value() == "On Testing"
+```
+
+#### Программа Flask
+
+`settings.toml` со средой `[testing]`.
+
+```toml
+[default]
+VALUE = "On Default"
+
+[testing]
+VALUE = "On Testing"
+```
+
+`src.py`, в котором есть фабрика приложений **Flask**.
+
+```python
+from flask import Flask
+from dynaconf.contrib import FlaskDynaconf
+
+
+def create_app(**config):
+    app = Flask(__name__)
+    FlaskDynaconf(app, **config)
+    return app
+```
+
+`tests/conftest.py` с фикстурами для внедрения зависимостей приложения во все тесты и заставить это приложение указывать на среду конфигурации `[testing]`.
+
+```python
+import pytest
+from src import create_app
+
+
+@pytest.fixture(scope="session")
+def app():
+    app = create_app(FORCE_ENV_FOR_DYNACONF="testing")
+    return app
+```
+
+te`sts/test_flask_dynaconf.py`, чтобы убедиться, что загружена правильная среда.
+
+```python
+def test_dynaconf_is_on_testing_env(app):
+    assert app.config["VALUE"] == "On Testing"
+    assert app.config.current_env == "testing"
+```
+
+## Имитация (mocking)
+
+Но в модульных тестах часто используется имитация **mock** некоторых объектов, и в редких случаях вам может понадобиться имитировать настройки `dynaconf.settings` при запуске тестов.
+
+```python
+from dynaconf.utils import DynaconfDict
+mocked_settings = DynaconfDict({'FOO': 'BAR'})
+```
+
+**DynaconfDict** — это объект, похожий на словарь, который можно заполнить из файла:
+
+```python
+from dynaconf.loaders import toml_loader
+toml_loader.load(mocked_settings, filename='my_file.toml', env='testing')
+```
