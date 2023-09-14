@@ -158,3 +158,7 @@
     * [watchdog.utils](servery-seti-os-faily/watchdog/api-watchdog/watchdog.utils.md)
     * [watchdog.utils.dirsnapshot](servery-seti-os-faily/watchdog/api-watchdog/watchdog.utils.dirsnapshot.md)
     * [watchdog.tricks](servery-seti-os-faily/watchdog/api-watchdog/watchdog.tricks.md)
+
+## Web
+
+* [tapi-yandex-metrika](web/tapi-yandex-metrika.md)
