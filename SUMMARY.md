@@ -165,4 +165,4 @@
 
 ## Celery
 
-* [celery-heimda](celery/celery-heimda.md)
+* [celery-heimdall](celery/celery-heimdall.md)
