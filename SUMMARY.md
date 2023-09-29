@@ -166,3 +166,5 @@
 ## Celery
 
 * [celery-heimdall](celery/celery-heimdall.md)
+* [kombu](celery/kombu/README.md)
+  * [Начало работы с kombu](celery/kombu/nachalo-raboty-s-kombu.md)
