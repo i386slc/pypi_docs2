@@ -98,6 +98,8 @@
     * [Расширение или настройка инструментов настройки](cli-ustanovka-config/setuptools/rukovodstvo-polzovatelya-setuptools/rasshirenie-ili-nastroika-instrumentov-nastroiki.md)
     * [Настройка setuptools с помощью файлов setup.cfg](cli-ustanovka-config/setuptools/rukovodstvo-polzovatelya-setuptools/nastroika-setuptools-s-pomoshyu-failov-setup.cfg.md)
     * [Настройка setuptools с помощью файлов pyproject.toml](cli-ustanovka-config/setuptools/rukovodstvo-polzovatelya-setuptools/nastroika-setuptools-s-pomoshyu-failov-pyproject.toml.md)
+  * [Поддержка системы сборки](cli-ustanovka-config/setuptools/podderzhka-sistemy-sborki.md)
+  * [Обнаружение пакета и доступ к ресурсам с pkg\_resources](cli-ustanovka-config/setuptools/obnaruzhenie-paketa-i-dostup-k-resursam-s-pkg\_resources.md)
 * [twine](cli-ustanovka-config/twine.md)
 * [Файл .pypirc](cli-ustanovka-config/fail-.pypirc.md)
 
