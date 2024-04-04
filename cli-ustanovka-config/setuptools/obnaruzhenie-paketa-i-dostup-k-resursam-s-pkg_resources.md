@@ -234,6 +234,25 @@ name = some.module:some.attr [extra1,extra2]
 
 #### Получение и создание Distribution
 
+Чаще всего вы получаете объекты Distribution из рабочего набора WorkingSet или среды Environmant. (См. разделы выше об [объектах WorkingSet](obnaruzhenie-paketa-i-dostup-k-resursam-s-pkg\_resources.md#obekty-workingset) и [объектах Environmant](obnaruzhenie-paketa-i-dostup-k-resursam-s-pkg\_resources.md#obekty-environment), которые являются контейнерами для активных и доступных дистрибутивов соответственно.) Вы также можете получить объекты Distribution из одного из этих API высокого уровня:
+
+* `find_distributions(path_item, only=False)` - возвращает дистрибутивы, доступные через path\_item. Если значение only истинно, выдает только те дистрибутивы, местоположение которых равно path\_item. Другими словами, если только это верно, это дает любые дистрибутивы, которые можно было бы импортировать, если бы path\_item находился в sys.path. Если значение only равно false, это также дает дистрибутивы, которые находятся «в» или «под» path\_item, но их нельзя будет импортировать, если их местоположения также не будут добавлены в sys.path.
+* `get_distribution(dist_spec)` - Возвращает объект Distribution для данного требования Requirement или строки. Если dist\_spec уже является экземпляром Distribution, он возвращается. Если это объект Requirement или строка, которую можно разобрать на один объект, он используется для поиска и активации соответствующего дистрибутива, который затем возвращается.
+
+Однако если вы создаете специализированные инструменты для работы с дистрибутивами или создаете новый формат дистрибутива, вам также может потребоваться создать объекты Distribution напрямую, используя один из трех конструкторов ниже.
+
+Все эти конструкторы принимают необязательный аргумент metadata, который используется для доступа к любым ресурсам или метаданным, связанным с дистрибутивом. Метаданные metadata должны быть объектом, реализующим интерфейс IResourceProvider, или None. Если оно равно None, вместо него используется EmptyProvider. Объекты распространения реализуют методы [IResourceProvider](obnaruzhenie-paketa-i-dostup-k-resursam-s-pkg\_resources.md#iresourceprovider) и [IMetadataProvider](obnaruzhenie-paketa-i-dostup-k-resursam-s-pkg\_resources.md#metody-imetadataprovider), делегируя их объекту metadata.
+
+* `Distribution.from_location(location, basename, metadata=None, **kw)` (classmethod) - создает дистрибутив для location, который должно быть строкой, например URL-адресом, именем файла или другой строкой, которая может использоваться в sys.path. basename — это строка, именующая дистрибутив, например `Foo-1.2-py2.4.egg`. Если basename заканчивается на `.egg`, то имя проекта, версия, версия Python и платформа извлекаются из имени файла и используются для установки этих свойств созданного дистрибутива. Любые дополнительные аргументы ключевого слова передаются конструктору `Distribution()`.
+* `Distribution.from_filename(filename, metadata=None**kw)` (classmethod) - создает дистрибутив, проанализировав локальное имя файла. Это более короткий способ сказать `Distribution.from_location(normalize_path(filename), os.path.basename(filename), metadata`). Другими словами, он создает дистрибутив, местоположение которого представляет собой нормализованную форму имени файла, анализируя имя и информацию о версии из базовой части имени файла. Любые дополнительные аргументы ключевого слова передаются конструктору `Distribution()`.
+* `Distribution(location,metadata,project_name,version,py_version,platform,precedence)` - создает дистрибутив, задав его свойства. Все аргументы являются необязательными и по умолчанию имеют значение None, за исключением py\_version (которое по умолчанию соответствует текущей версии Python) и precedence (которое по умолчанию равно EGG\_DIST; более подробную информацию см. в precedence в разделе «[Атрибуты Distribution](obnaruzhenie-paketa-i-dostup-k-resursam-s-pkg\_resources.md#atributy-distribution)» ниже). Обратите внимание, что обычно проще использовать конструкторы `from_filename()` или `from_location()`, чем указывать все эти аргументы по отдельности.
+
+#### Атрибуты Distribution
+
 ### Metadata API
 
+#### Методы IMetadataProvider
+
 ### Поддержка пользовательских импортеров
+
+#### IResourceProvider
