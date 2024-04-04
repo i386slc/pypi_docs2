@@ -249,6 +249,16 @@ name = some.module:some.attr [extra1,extra2]
 
 #### Атрибуты Distribution
 
+* `location` -&#x20;
+* `project_name` -&#x20;
+* `key` -&#x20;
+* `extras` -&#x20;
+* `version` -&#x20;
+* `parsed_version` -&#x20;
+* `py_version` -&#x20;
+* `platform` -&#x20;
+* `precedence` -&#x20;
+
 ### Metadata API
 
 #### Методы IMetadataProvider
