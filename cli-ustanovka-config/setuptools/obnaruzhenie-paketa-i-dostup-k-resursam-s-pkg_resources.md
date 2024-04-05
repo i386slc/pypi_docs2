@@ -360,6 +360,8 @@ API метаданных предоставляется объектами, ре
 * `get_metadata_lines(name)` - Выдает именованный ресурс метаданных в виде списка непустых строк без комментариев. Это сокращение от вызова `yield_lines(provider.get_metadata(name))`. Дополнительную информацию о распознаваемом синтаксисе см. в разделе, посвященном [yield\_lines()](obnaruzhenie-paketa-i-dostup-k-resursam-s-pkg\_resources.md#utility-sintaksicheskogo-analiza) ниже.
 * `run_script(script_name, namespace)` - Выполняет указанный сценарий в предоставленном словаре пространства имен. Вызывает ResolutionError, если в каталоге метаданных scripts нет сценария с таким именем. namespace имен должно быть словарем Python, обычно словарем модуля, если скрипт запускается как модуль.
 
+### Исключения
+
 ### Поддержка пользовательских импортеров
 
 #### IResourceProvider
