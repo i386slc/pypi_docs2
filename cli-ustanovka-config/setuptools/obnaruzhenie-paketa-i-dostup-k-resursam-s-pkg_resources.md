@@ -399,6 +399,21 @@ ExtractionError
 
 ### Поддержка пользовательских импортеров
 
+По умолчанию pkg\_resources поддерживает обычный импорт файловой системы и импортеры zipimport. Если вы хотите использовать функции pkg\_resources с другими (совместимыми с PEP 302) импортерами или загрузчиками модулей, вам может потребоваться зарегистрировать различные обработчики и вспомогательные функции с помощью этих API:
+
+* `register_finder(importer_type, distribution_finder)` - Регистрирует distribution\_finder, чтобы находить дистрибутивы в элементах sys.path. importer\_type — это тип или класс PEP 302 "Importer" (обработчик элемента sys.path), а distribution\_finder — это вызываемый объект, который при передаче элемента пути, экземпляра импортера и флага only дает экземпляры Distribution, найденные по этому пути элемента. (Флаг only, если он верен, означает, что средство поиска должно выдавать только объекты Distribution, местоположение location которых равно указанному элементу пути.) См. исходный код функции `pkg_resources.find_on_path` для примера функции поиска.
+* `register_loader_type(loader_type, provider_factory)` - Регистрирует provider\_factory, чтобы создать объекты IResourceProvider для loader\_type. loader\_type — это тип или класс PEP 302 `module.__loader__`, а provider\_factory — это функция, которая при передаче объекта модуля возвращает [IResourceProvider](obnaruzhenie-paketa-i-dostup-k-resursam-s-pkg\_resources.md#iresourceprovider) для этого модуля, что позволяет использовать его с [API ResourceManager](obnaruzhenie-paketa-i-dostup-k-resursam-s-pkg\_resources.md#resourcemanager-api).
+* `register_namespace_handler(importer_type, namespace_handler)` - Регистрирует namespace\_handler, чтобы объявить пакеты пространства имен для данного importer\_type. importer\_type — это тип или класс "importer" PEP 302 (обработчик элемента sys.path), а namespace\_handler — это вызываемый объект с такой сигнатурой:
+
+```python
+def namespace_handler(importer, path_entry, moduleName, module):
+    # возвращает path_entry для использования для дочерних пакетов
+```
+
+Обработчики пространства имен вызываются только в том случае, если соответствующий объект импортера уже согласился с тем, что он может обрабатывать соответствующий элемент пути. Обработчик должен возвращать подпуть только в том случае, если модуль `__path__` еще не содержит эквивалентный подпуть. В противном случае он должен вернуть None.
+
+Пример обработчика пространства имен см. в исходном коде функции `pkg_resources.file_ns_handler`, которая используется как для импорта zip-файлов, так и для обычного импорта.
+
 #### IResourceProvider
 
 ### Служебные функции
