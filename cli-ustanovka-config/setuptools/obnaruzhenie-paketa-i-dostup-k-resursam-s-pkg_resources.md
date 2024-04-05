@@ -291,6 +291,8 @@ name = some.module:some.attr [extra1,extra2]
 
 Если дистрибутив был создан с аргументом metadata, все эти методы доступа к ресурсам и метаданным делегируются этому поставщику метаданных. В противном случае они делегируются EmptyProvider, так что в дистрибутиве не будет ресурсов или метаданных. Этот подход делегирования используется для того, чтобы поддержку пользовательских импортеров или новых форматов распространения можно было осуществлять просто путем создания соответствующей реализации [IResourceProvider](obnaruzhenie-paketa-i-dostup-k-resursam-s-pkg\_resources.md#iresourceprovider); дополнительные сведения см. в разделе ниже «[Поддержка пользовательских импортеров](obnaruzhenie-paketa-i-dostup-k-resursam-s-pkg\_resources.md#podderzhka-polzovatelskikh-importerov)».
 
+### ResourceManager API
+
 ### Metadata API
 
 #### Методы IMetadataProvider
