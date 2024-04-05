@@ -416,6 +416,19 @@ def namespace_handler(importer, path_entry, moduleName, module):
 
 #### IResourceProvider
 
+IResourceProvider — это абстрактный класс, который документирует, какие методы требуются от объектов, возвращаемых provider\_factory, зарегистрированной с помощью метода `register_loader_type()`. IResourceProvider является подклассом IMetadataProvider, поэтому объекты, реализующие этот интерфейс, также должны реализовывать все [методы IMetadataProvider](obnaruzhenie-paketa-i-dostup-k-resursam-s-pkg\_resources.md#metody-imetadataprovider), а также методы, показанные здесь. Аргумент manager для приведенных ниже методов должен быть объектом, который поддерживает полный [API ResourceManager](obnaruzhenie-paketa-i-dostup-k-resursam-s-pkg\_resources.md#resourcemanager-api), описанный выше.
+
+* `get_resource_filename(manager, resource_name)` - Возвращает истинный путь к файловой системе для `resource_name`, согласовав извлечение с `manager`, если ресурс необходимо распаковать в файловую систему.
+* `get_resource_stream(manager, resource_name)` - Возвращает читаемый файлоподобный объект для `resource_name`.
+* `get_resource_string(manager, resource_name)` - Возвращает строку, содержащую содержимое `resource_name`.
+* `has_resource(resource_name)` - Содержит ли пакет названный ресурс?
+* `resource_isdir(resource_name)` - Является ли именованный ресурс каталогом? Возвращает значение False, если ресурс не существует или не является каталогом.
+* `resource_listdir(resource_name)` - Возвращает список содержимого каталога ресурсов, например `os.listdir()`. Запрос содержимого несуществующего каталога может вызвать исключение.
+
+Кстати, обратите внимание, что вашим классам-провайдерам не требуется (и не следует) создавать подклассы IResourceProvider или IMetadataProvider! Эти классы существуют исключительно для целей документации и не предоставляют никакого полезного кода реализации. Вместо этого вы можете захотеть создать подкласс одного из [встроенных провайдеров ресурсов](obnaruzhenie-paketa-i-dostup-k-resursam-s-pkg\_resources.md#vstroennye-provaidery-resursov).
+
+#### Встроенные провайдеры ресурсов
+
 ### Служебные функции
 
 #### Утилиты синтаксического анализа
