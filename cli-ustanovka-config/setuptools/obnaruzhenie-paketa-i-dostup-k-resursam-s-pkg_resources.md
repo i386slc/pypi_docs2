@@ -483,4 +483,6 @@ NullProvider
 
 ### История
 
+{% hint style="warning" %}
 История не переведена...
+{% endhint %}
